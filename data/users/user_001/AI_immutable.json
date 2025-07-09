@@ -23,7 +23,7 @@
     },
     "stress": {
       "value": null,
-      "type": "widget", 
+      "type": "widget",
       "updated_at": null,
       "title": "Stres",
       "notes": "Stress level - Widget input, read-only for LLM"
