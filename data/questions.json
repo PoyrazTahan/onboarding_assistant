@@ -1,0 +1,137 @@
+{
+  "questions": [
+    {
+      "id": "age",
+      "field": "age",
+      "type": "free_form",
+      "question_text": "Kaç yaşındasınız?",
+      "question_english": "How old are you?",
+      "expected_format": "numeric",
+      "validation": "integer between 18 and 120",
+      "validation_notes": "Accept textual input like 'twenty', 'I am about to be twenty one', 'around 30' - extract numeric value",
+      "order": 1
+    },
+    {
+      "id": "gender",
+      "field": "gender", 
+      "type": "widget",
+      "question_text": "Cinsiyetiniz nedir?",
+      "question_english": "What is your gender?",
+      "expected_format": "selection",
+      "options": ["Erkek", "Kadın", "Diğer"],
+      "order": 2
+    },
+    {
+      "id": "height",
+      "field": "height",
+      "type": "free_form",
+      "question_text": "Boyunuz kaç santimetre?",
+      "question_english": "What is your height in centimeters?",
+      "expected_format": "numeric",
+      "validation": "integer between 100 and 250",
+      "validation_notes": "Accept textual input like 'one seventy five', 'I am about 180cm tall', '5 feet 8 inches' - extract numeric value in cm",
+      "order": 3
+    },
+    {
+      "id": "weight",
+      "field": "weight",
+      "type": "free_form",
+      "question_text": "Kilonuz kaç kilogram?",
+      "question_english": "What is your weight in kilograms?",
+      "expected_format": "numeric",
+      "validation": "integer between 30 and 300",
+      "validation_notes": "Accept textual input like 'seventy kilos', 'I weigh about 65', '150 pounds' - extract numeric value in kg",
+      "order": 4
+    },
+    {
+      "id": "sleep",
+      "field": "sleep",
+      "type": "widget",
+      "question_text": "Uyku kaliteniz nasıl?",
+      "question_english": "How is your sleep quality?",
+      "expected_format": "scale",
+      "scale": "1-10",
+      "order": 5
+    },
+    {
+      "id": "stress",
+      "field": "stress",
+      "type": "widget",
+      "question_text": "Stres seviveniz nedir?",
+      "question_english": "What is your stress level?",
+      "expected_format": "scale",
+      "scale": "1-10",
+      "order": 6
+    },
+    {
+      "id": "wellbeing",
+      "field": "wellbeing",
+      "type": "widget",
+      "question_text": "İyilik haliniz nasıl?",
+      "question_english": "How is your wellbeing?",
+      "expected_format": "scale",
+      "scale": "1-10",
+      "order": 7
+    },
+    {
+      "id": "activity",
+      "field": "activity",
+      "type": "widget",
+      "question_text": "Aktivite seviveniz nedir?",
+      "question_english": "What is your activity level?",
+      "expected_format": "selection",
+      "options": ["Düşük", "Orta", "Yüksek"],
+      "order": 8
+    },
+    {
+      "id": "sugar",
+      "field": "sugar",
+      "type": "widget",
+      "question_text": "Şeker tüketiminiz nasıl?",
+      "question_english": "How is your sugar consumption?",
+      "expected_format": "selection",
+      "options": ["Az", "Orta", "Çok"],
+      "order": 9
+    },
+    {
+      "id": "water_consumption",
+      "field": "water_consumption",
+      "type": "widget",
+      "question_text": "Günde kaç bardak su içiyorsunuz?",
+      "question_english": "How many glasses of water do you drink per day?",
+      "expected_format": "numeric",
+      "validation": "integer between 0 and 20",
+      "order": 10
+    },
+    {
+      "id": "smoking",
+      "field": "smoking",
+      "type": "widget",
+      "question_text": "Sigara kullanıyor musunuz?",
+      "question_english": "Do you smoke?",
+      "expected_format": "selection",
+      "options": ["Hayır", "Evet - Az", "Evet - Orta", "Evet - Çok"],
+      "order": 11
+    },
+    {
+      "id": "supplements",
+      "field": "supplements",
+      "type": "widget",
+      "question_text": "Hangi takviyeleri alıyorsunuz?",
+      "question_english": "What supplements do you take?",
+      "expected_format": "multiple_selection",
+      "options": ["Hiçbiri", "Vitamin D", "Vitamin C", "Multivitamin", "Diğer"],
+      "order": 12
+    },
+    {
+      "id": "parenting",
+      "field": "parenting",
+      "type": "widget",
+      "question_text": "Ebeveyn misiniz?",
+      "question_english": "Are you a parent?",
+      "expected_format": "selection",
+      "options": ["Hayır", "Evet - 1 çocuk", "Evet - 2+ çocuk"],
+      "order": 13
+    }
+  ]
+}

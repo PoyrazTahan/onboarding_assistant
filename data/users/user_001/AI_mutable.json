@@ -1,0 +1,27 @@
+{
+  "user_id": "user_001",
+  "last_updated": "2024-01-01T00:00:00Z",
+  "free_form_data": {
+    "age": {
+      "value": null,
+      "type": "free_form",
+      "updated_at": null,
+      "title": "Yaş",
+      "notes": "Age - Free-form input, LLM read-write. IMPORTANT: Input may be textual like 'twenty' or 'I am about to be twenty one' - extract numeric value (20) and save as integer. Handle variations like 'I'm 25', 'twenty-five', 'around 30', etc."
+    },
+    "height": {
+      "value": null,
+      "type": "free_form",
+      "updated_at": null,
+      "title": "Boy",
+      "notes": "Height in cm - Free-form input, LLM read-write. IMPORTANT: Input may be textual like 'one seventy five' or 'I am about 180cm tall' - extract numeric value (175, 180) and save as integer. Handle variations like '5 feet 8 inches' (convert to cm), 'around 170', etc."
+    },
+    "weight": {
+      "value": null,
+      "type": "free_form",
+      "updated_at": null,
+      "title": "Kilo",
+      "notes": "Weight in kg - Free-form input, LLM read-write. IMPORTANT: Input may be textual like 'seventy kilos' or 'I weigh about 65' - extract numeric value (70, 65) and save as integer. Handle variations like '150 pounds' (convert to kg), 'around 75kg', etc."
+    }
+  }
+}
