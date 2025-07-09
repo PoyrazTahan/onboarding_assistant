@@ -168,7 +168,6 @@ async def tracked_invoke(kernel: sk.Kernel,
     Returns:
         str: The response from the API call
     """
-    print(f"🔄 {call_description}...")
     start_time = time.time()
     
     # Make the API call
@@ -189,9 +188,6 @@ async def tracked_invoke(kernel: sk.Kernel,
         model_id=model_id,
         call_description=call_description
     )
-    
-    # Print call details
-    tracker.print_call_details(input_tokens, output_tokens, response_time, call_cost)
     
     return result
 

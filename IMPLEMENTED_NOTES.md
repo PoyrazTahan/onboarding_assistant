@@ -100,6 +100,86 @@ This document preserves important historical information and lessons learned fro
 - Added detailed validation notes for LLM
 - Fixed file naming conventions
 
+## Phase 2A Implementation Attempt - FAILED
+
+### Phase 2A: Function Calling Integration - FAILED
+**Tasks Attempted**:
+- [x] Consolidated data structure (AI_mutable.json + AI_immutable.json → user_data.json)
+- [x] Implemented Semantic Kernel function calling architecture
+- [x] Created comprehensive LLM prompt with function calling instructions
+- [x] Moved UI components to separate `/ui/` folder
+- [x] Implemented session-based conversation management
+- [x] Created intelligent `ask_question()` function for widget auto-detection
+- [x] Removed hardcoded logic in favor of LLM-driven decisions
+- [❌] LLM function calling - NOT WORKING
+- [❌] Data updates - NOT WORKING
+- [❌] Question progression - NOT WORKING
+- [❌] Widget integration - NOT WORKING
+
+**What We Tried**:
+- **Function Calling**: Registered functions with `@kernel_function` decorator
+- **Auto-orchestration**: LLM should call functions automatically
+- **Widget Integration**: LLM should trigger widget interfaces via `ask_question()`
+- **Data Updates**: LLM should update user_data.json via `update_user_data()`
+- **Question Flow**: LLM should progress through 13 questions automatically
+
+**What Failed**:
+- **Function Invocation**: LLM describes actions but doesn't execute registered functions
+- **Data Persistence**: All values remain null in user_data.json
+- **Widget Triggers**: Widget interface never gets called by LLM
+- **Question Sequence**: No automatic progression through questions
+- **Orchestration**: System requires manual user input for each step
+
+**Critical Issues Discovered**:
+1. **Semantic Kernel Function Calling Broken**: LLM doesn't actually invoke functions
+2. **Lost Update Capabilities**: Previous working features were removed during refactoring
+3. **Over-ambitious Scope**: Tried to implement questions + actions simultaneously
+4. **Insufficient Testing**: Made large changes without incremental validation
+5. **Regex/Hardcoded Logic**: Created brittle extraction patterns that got in the way
+
+**Lessons Learned**:
+- **Function Calling First**: Must verify LLM actually invokes functions before building features
+- **Incremental Testing**: Test each component independently before integration
+- **Scope Creep**: Focus on questions only, not actions
+- **Lost Functionality**: Don't remove working features without replacement
+- **Architecture Over Features**: Clean architecture means nothing if core functionality is broken
+
+**Architecture Decisions Made**:
+- **Function Calling Over MCP**: Chose Semantic Kernel functions instead of MCP protocol
+- **Unified Data Structure**: Single user_data.json with permissions model
+- **UI Separation**: Moved all UI components to `/ui/` folder
+- **Session-Based Conversations**: Separate conversation files for each session
+- **Intelligent Question Handling**: Single `ask_question()` function auto-detects widget vs free-form
+
+**Technical Discoveries**:
+- **Data Structure**: Unified user_data.json works well for permissions model
+- **Architecture**: Clean separation of concerns is achievable
+- **UI Components**: Widget handler and chat UI work independently
+- **Function Registration**: Functions can be registered with Semantic Kernel
+- **Function Invocation**: LLM doesn't actually call registered functions (CRITICAL BUG)
+
+**Current Working State**:
+- **✅ Basic Chat**: main.py runs and can have conversations
+- **✅ API Integration**: Semantic Kernel with Gemini works with cost tracking
+- **✅ Data Structure**: Unified user_data.json with permissions
+- **✅ Architecture**: Clean separation of `/agents/`, `/ui/`, `/utils/`
+- **❌ Function Calling**: LLM describes but doesn't execute functions
+- **❌ Data Updates**: No persistence, all values remain null
+- **❌ Question Flow**: No automatic progression
+
+**Impact of Failure**:
+- **Blocked Progress**: Can't proceed with any features until function calling works
+- **Lost Time**: Significant effort spent on non-functional architecture
+- **Scope Reset**: Must focus on smaller, testable increments
+- **Testing Debt**: Need comprehensive test suite for function calling
+
+**Next Steps Required**:
+1. **Fix Function Calling**: Debug why LLM doesn't invoke functions
+2. **Test Simple Functions**: Start with basic `get_user_status()` call
+3. **Verify Data Updates**: Ensure JSON files are actually modified
+4. **Incremental Testing**: Test each component before integration
+5. **Smaller Scope**: Focus on questions only, not actions
+
 ## Future Reference
 
 These implementation details are preserved for:
@@ -107,3 +187,4 @@ These implementation details are preserved for:
 - Baseline metrics for performance optimization
 - Lessons learned to avoid repeating mistakes
 - Historical context for future developers
+- Documentation of failed attempts and their causes
