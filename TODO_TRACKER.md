@@ -1,161 +1,124 @@
-# TODO Tracker - Medical & Psychological Health App
+# TODO Tracker - Onboarding Assistant
 
-## Overview
-This tracker maintains the implementation status of each phase, notes, and lessons learned.
+## Quick Status Overview
 
-## Phase Status
+| Phase                          | Status         | Priority | Progress |
+| ------------------------------ | -------------- | -------- | -------- |
+| Phase 1A: Data Foundation      | ✅ COMPLETED   | HIGH     | 100%     |
+| Phase 1B: API Integration      | ✅ COMPLETED   | HIGH     | 100%     |
+| **Phase 2A: Monolithic Agent** | 🚧 IN PROGRESS | **HIGH** | **0%**   |
+| Phase 2B: MCP Protocol Design  | ⏳ PENDING     | HIGH     | 0%       |
+| Phase 3: Multi-Agent Split     | ⏳ PENDING     | MEDIUM   | 0%       |
+| Phase 4: Advanced Features     | ⏳ PENDING     | LOW      | 0%       |
 
-### Phase 1A: Project Structure & Data Foundation
-- **Status**: COMPLETED
-- **Priority**: HIGH
-- **Description**: Create basic project structure and data foundation
-- **Tasks**:
-  - [x] Set up Python project structure
-  - [x] Create data folder structure with sample user data
-  - [x] Create questions configuration file
-  - [x] Create sample actions file
-  - [x] Create simple test framework
-  - [x] Update data structure with English field names and Turkish titles
-  - [x] Add exclude_conditions to actions
-  - [x] Add detailed notes for free-form field text-to-number conversion
-  - [x] Fix file naming (AI_immutable.json)
-  - [x] Update questions.json with better validation notes
-  - [x] Move widget fields to AI_immutable.json
-  - [x] Keep only free-form fields in AI_mutable.json
-  - [x] Update test framework for new structure
-- **Notes**: All tests passing. Data structure properly separated between mutable/immutable files. Ready for API integration.
-- **Lessons Learned**: 
-  - File naming: AI_immutable_json.json → AI_immutable.json
-  - **Data separation**: Widget fields (read-only) → AI_immutable.json, Free-form fields (read-write) → AI_mutable.json
-  - session_state.json is immutable from LLM side
-  - Actions need exclude_conditions in addition to trigger_conditions (e.g., mammogram excluded for males)
-  - Free-form fields need special handling for text-to-number conversion ("twenty" → 20)
-  - English field names with Turkish titles for better LLM processing
-  - Detailed validation notes for Answer Handler LLM guidance
-  - **LLM Access**: AI_mutable.json (3 fields: age, height, weight) - LLM can read/write
-  - **LLM Access**: AI_immutable.json (10 widget fields) - LLM can read only
+---
 
-### Phase 1B: API Integration & Cost Tracking
-- **Status**: COMPLETED
-- **Priority**: HIGH
-- **Description**: Establish LLM API connections with comprehensive cost tracking
-- **Tasks**:
-  - [x] Install Semantic Kernel dependencies
-  - [x] Create Gemini API integration (GoogleAIChatCompletion)
-  - [x] Create OpenAI API integration (OpenAIChatCompletion) 
-  - [x] Test basic prompt-response flow
-  - [x] Implement unified API cost tracking system
-  - [x] Create abstracted utils/api_tracker.py
-  - [x] Test both providers with tracking
-  - [x] Document API usage patterns
-- **Notes**: Both Gemini and OpenAI working with comprehensive tracking
-- **Key Achievement**: Unified API tracker supporting multiple providers
-- **Lessons Learned**:
-  - **Cost Efficiency**: Gemini 1.5-flash ~$0.000005/call vs OpenAI gpt-4o-mini ~$0.000020/call (4x difference)
-  - **Performance**: OpenAI ~20% faster, Gemini more cost-effective
-  - **Architecture**: Abstracted tracker enables easy provider switching
-  - **Simplicity**: Removed unnecessary config.py - keep configuration where it's used
-  - **Tracking Value**: Real-time cost monitoring essential for production
-  - **Provider Comparison**: Unified tracking enables data-driven provider selection
+## 🎯 CURRENT PHASE: Phase 2A - Monolithic Agent Implementation
 
-### Phase 2: Monolith Agent & MCP Protocol Design
+### Status: IN PROGRESS
+
+### Priority: HIGH
+
+### Description: Create single agent handling all operations before splitting
+
+### Tasks:
+
+- [ ] **Create agent prompt file** `/agents/prompts/monolith_agent.txt`
+- [ ] **Implement conversation manager** with state tracking
+- [ ] **Build data handler** for JSON read/write operations
+- [ ] **Add text extraction utilities** for free-form fields (age, height, weight)
+- [ ] **Create agent orchestration** logic in `agent_manager.py`
+- [ ] **Test conversation flow** with all 13 questions
+- [ ] **Implement action recommendation** based on user data
+- [ ] **Add session state management**
+- [ ] **Create integration tests** for full conversation
+
+### Implementation Notes:
+
+- Start with `main.py` as base (already has Semantic Kernel setup)
+- Use `api_tracker.py` for all LLM calls
+- Focus on natural conversation flow
+- Handle both widget and free-form inputs
+
+### Success Criteria:
+
+- [ ] Agent can conduct full onboarding conversation
+- [ ] Correctly extracts data from natural language
+- [ ] Updates appropriate JSON files
+- [ ] Recommends relevant health actions
+- [ ] Maintains conversation context
+
+---
+
+## 📋 NEXT PHASE: Phase 2B - MCP Protocol Design
+
+### Status: PENDING
+
+### Priority: HIGH
+
+### Description: Design MCP protocol for data operations and widget integration
+
+### Planned Tasks:
+
+- [ ] Define MCP tools structure
+- [ ] Design LLM permission model
+- [ ] Plan widget trigger operations
+- [ ] Architect data access patterns
+- [ ] Create MCP implementation spec
+- [ ] Build prototype MCP tools
+- [ ] Test permission boundaries
+- [ ] Document MCP protocol
+
+### Key Decisions Needed:
+
+1. LLM permission enforcement strategy
+2. Widget communication protocol
+3. Data operation patterns (direct vs API-mediated)
+4. Concurrent access handling
+
+---
+
+## 📅 FUTURE PHASES
+
+### Phase 3: Multi-Agent Split
+
 - **Status**: PENDING
-- **Priority**: HIGH
-- **Description**: Create single monolith agent first, then design MCP protocol for data operations
-- **Phase 2A: Monolith Agent**:
-  - [ ] Create single agent that handles all operations
-  - [ ] Implement data reading capabilities (AI_mutable.json, AI_immutable.json)
-  - [ ] Add basic conversation flow
-  - [ ] Test with existing data structure
-- **Phase 2B: MCP Protocol Planning**:
-  - [ ] Design MCP protocol for read/write operations
-  - [ ] Plan widget trigger operations
-  - [ ] Define LLM permission boundaries
-  - [ ] Architect data access patterns
-- **Key Considerations**:
-  - **Iteration Strategy**: Start simple with monolith, then split into agents
-  - **MCP Questions**: LLM permissions, read/write patterns, widget integration
-  - **Data Access**: How should LLM interact with AI_mutable vs AI_immutable?
-  - **Architecture**: Balance between simplicity and extensibility
-- **Notes**: Requires planning phase to resolve MCP architecture questions
+- **Description**: Break monolith into specialized agents
+- **Key Tasks**: Question agent, Answer agent, Action agent, Orchestrator
 
-### Phase 3: Data Flow Implementation
+### Phase 4: Advanced Features
+
 - **Status**: PENDING
-- **Priority**: HIGH
-- **Description**: Add basic read/write capabilities with JSON files
-- **Tasks**:
-  - [ ] Create data folder structure
-  - [ ] Implement JSON read/write functions
-  - [ ] Connect agents to data files
-  - [ ] Test data persistence
-- **Notes**: No validation or error handling initially
+- **Description**: Session recovery, database sync, advanced analytics
+- **Key Tasks**: Two-layer persistence, timeout handling, performance optimization
 
-### Phase 4: Answer Handler Agent
-- **Status**: PENDING
-- **Priority**: HIGH
-- **Description**: Implement conversational interface for user interaction
-- **Tasks**:
-  - [ ] Create conversation prompts
-  - [ ] Implement data extraction logic
-  - [ ] Handle widget vs free-form inputs
-  - [ ] Connect to data writing
-- **Notes**: This is the main user-facing component, prioritize user experience
+---
 
-### Phase 5: Question State Management
-- **Status**: PENDING
-- **Priority**: MEDIUM
-- **Description**: Track which questions have been asked/answered
-- **Tasks**:
-  - [ ] Create state tracker
-  - [ ] Skip answered questions logic
-  - [ ] Handle returning users
-  - [ ] Session persistence
-- **Notes**: Simple file-based state management
+## 📝 Notes for Current Work
 
-### Phase 6: Action Recommendation System
-- **Status**: PENDING
-- **Priority**: MEDIUM
-- **Description**: Basic rule-based health action suggestions
-- **Tasks**:
-  - [ ] Implement rule engine
-  - [ ] Create priority logic
-  - [ ] Track recommendations
-- **Notes**: Start with hardcoded if-then rules
+### Working Directory Structure:
 
-### Phase 7: Data Persistence Layer
-- **Status**: PENDING
-- **Priority**: MEDIUM
-- **Description**: Implement two-layer storage system
-- **Tasks**:
-  - [ ] JSON layer for immediate updates
-  - [ ] Database sync placeholder
-  - [ ] Conflict resolution
-- **Notes**: Focus on JSON layer, mock database initially
+```
+/agents/
+├── prompts/
+│   └── monolith_agent.txt    # CREATE FIRST
+├── agent_manager.py          # Agent orchestration
+└── data_handler.py           # JSON operations
 
-### Phase 8: Session Management
-- **Status**: PENDING
-- **Priority**: LOW
-- **Description**: Handle incomplete sessions and state recovery
-- **Tasks**:
-  - [ ] Timeout detection
-  - [ ] Session recovery
-  - [ ] Context restoration
-- **Notes**: Can be basic initially
+/utils/
+├── api_tracker.py            # ✅ Already exists
+└── conversation_utils.py     # Text extraction
+```
 
-### Phase 9: Advanced Features
-- **Status**: PENDING
-- **Priority**: LOW
-- **Description**: Implement remaining agents and sophisticated logic
-- **Tasks**:
-  - [ ] Dynamic question ordering
-  - [ ] Advanced action prioritization
-  - [ ] Comprehensive error handling
-  - [ ] Full database integration
-- **Notes**: Define based on learnings from earlier phases
+### Key Files to Reference:
 
-## Implementation Guidelines
+- `main.py` - Semantic Kernel setup
+- `data/questions.json` - 13 questions to ask
+- `data/actions.json` - 12 actions to recommend
+- `utils/api_tracker.py` - Cost tracking
 
-### For Each Phase:
+### Remember:
+
 1. Keep implementation simple and direct
 2. Test with actual inputs/outputs
 3. Document what works and what's placeholder
@@ -163,13 +126,12 @@ This tracker maintains the implementation status of each phase, notes, and lesso
 5. Update this tracker with results
 
 ### Success Metrics:
+
 - Phase produces working code
 - Can demonstrate functionality with test cases
 - Clear handoff to next phase
 - No over-engineering or premature optimization
 
-## Notes Section
-- Add discovered requirements here
-- Document any API quirks or limitations
-- Track technical decisions and rationale
-- Note areas needing future improvement
+---
+
+_Last Updated: Phase 2A started, ready for implementation_
