@@ -7,6 +7,7 @@
 - **Minimal Error Handling**: Start with happy path, add robustness later
 - **Direct Implementation**: No custom types or complex data structures initially
 - **Continuous Testing**: Run and verify each phase before moving forward
+- **User Involved Development**: Remember to break down your task if necessary and ask user for validation of your work and extra suggestions.
 
 ## Phase 1: Basic Pipeline Setup
 

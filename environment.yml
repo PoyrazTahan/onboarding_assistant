@@ -1,0 +1,11 @@
+name: onboarding_asistant
+channels:
+  - conda-forge # Often preferred for more up-to-date packages and better cross-platform support
+  - defaults
+dependencies:
+  - python=3.12
+  - python-dotenv
+  - numpy
+  - pip:
+      - semantic-kernel
+      - google-generative-ai
