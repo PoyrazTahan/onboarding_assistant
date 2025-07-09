@@ -20,6 +20,7 @@ PRICING_CONFIG = {
     "gemini-2.0-flash-lite": {"input": 0.075, "output": 0.30},
     "gemini-2.0-flash": {"input": 0.10, "output": 0.40},
     "gemini-2.5-flash-lite-preview-06-17": {"input": 0.10, "output": 0.40},
+    "gemini-2.5-pro": {"input": 1.25, "output": 10.0},
     "gemini-1.5-pro": {"input": 3.50, "output": 10.50},
     "gemini-1.0-pro": {"input": 0.50, "output": 1.50},
     "gemma-3n-e2b-it": {"input": 0.00, "output": 0.00},
