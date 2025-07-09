@@ -12,7 +12,6 @@ class DataHandler:
         self.base_path = f"/Users/dogapoyraztahan/_repos/heltia/onboarding_assistant/data/{user_id}"
         self.user_data_path = f"{self.base_path}/user_data.json"
         self.questions_path = "/Users/dogapoyraztahan/_repos/heltia/onboarding_assistant/data/questions.json"
-        # REMOVED: actions_path - not needed for data collection phase
     
     def _load_json(self, file_path: str) -> Dict[str, Any]:
         """Load JSON file safely"""
