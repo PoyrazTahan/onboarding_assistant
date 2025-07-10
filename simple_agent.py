@@ -22,94 +22,12 @@ from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoic
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatPromptExecutionSettings
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
-# Import our conversation manager
+# Import our conversation manager and logging service
 from conversation_manager import ConversationManager
+from utils.logging_chat_service import LoggingChatService
 
 # Check for debug flag
 DEBUG_MODE = "--debug" in sys.argv
-
-# Custom logging chat service
-class LoggingChatService(OpenAIChatCompletion):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Use __dict__ to bypass Pydantic validation
-        self.__dict__['conversation_manager'] = None
-    
-    def set_conversation_manager(self, conv_manager):
-        self.__dict__['conversation_manager'] = conv_manager
-    
-    async def get_chat_message_contents(self, *args, **kwargs):
-        print(f"\n🔄 API CALL INITIATED")
-        
-        # Extract essential request info
-        settings = kwargs.get('settings', {})
-        function_behavior = getattr(settings, 'function_choice_behavior', None)
-        
-        # Check available functions
-        available_functions = []
-        if 'kernel' in kwargs:
-            kernel = kwargs['kernel']
-            if hasattr(kernel, 'plugins'):
-                for plugin_name, plugin in kernel.plugins.items():
-                    if plugin_name != 'chat_plugin':  # Skip chat function
-                        available_functions.extend(plugin.functions.keys())
-        
-        print(f"📋 SETUP: Functions={len(available_functions)} | Behavior={function_behavior.type_.value if function_behavior else 'none'}")
-        print(f"🔧 AVAILABLE: {available_functions}")
-        
-        if DEBUG_MODE:
-            print(f"\n=== DEBUG: DETAILED API CALL INFO ===")
-            print(f"Args count: {len(args)}")
-            print(f"Kwargs keys: {list(kwargs.keys())}")
-            if settings:
-                print(f"Settings: {settings}")
-            if 'kernel' in kwargs:
-                kernel = kwargs['kernel']
-                if hasattr(kernel, 'plugins'):
-                    print(f"Kernel plugins detailed:")
-                    for plugin_name, plugin in kernel.plugins.items():
-                        funcs = list(plugin.functions.keys())
-                        print(f"  Plugin '{plugin_name}': {funcs}")
-        
-        print("=" * 50)
-        
-        result = await super().get_chat_message_contents(*args, **kwargs)
-        
-        # Extract essential response info  
-        chat_messages = result if isinstance(result, list) else (result.value if hasattr(result, 'value') else [])
-        
-        functions_executed = []
-        response_content = ""
-        
-        for chat_msg in chat_messages:
-            if hasattr(chat_msg, 'content'):
-                response_content = chat_msg.content
-            
-            # Check for function executions in items
-            if hasattr(chat_msg, 'items') and chat_msg.items:
-                for item in chat_msg.items:
-                    if hasattr(item, 'function_call_result'):
-                        func_result = item.function_call_result
-                        functions_executed.append({
-                            'name': func_result.function_name,
-                            'result': func_result.result
-                        })
-                        
-                        if self.__dict__.get('conversation_manager'):
-                            self.__dict__['conversation_manager'].add_tool_call_manually(
-                                function_name=func_result.function_name,
-                                arguments={},
-                                result=func_result.result,
-                                success=True
-                            )
-        
-        print(f"✅ API RESPONSE: {len(functions_executed)} functions executed")
-        for func in functions_executed:
-            print(f"   🔧 {func['name']} → {func['result']}")
-        print(f"💬 CONTENT: {response_content}")
-        print("=" * 50)
-        
-        return result
 
 # Load environment
 load_dotenv()
@@ -202,39 +120,47 @@ class DataManager:
         data = self.load_data()
         print(f"   📊 Current data before update: {data}")
         
-        if field not in data:
-            error_msg = f"Error: Field '{field}' not found. Available fields: {list(data.keys())}"
+        # Make field case-insensitive by checking lowercase versions
+        field_lower = field.lower()
+        available_fields = list(data.keys())
+        field_map = {f.lower(): f for f in available_fields}
+        
+        if field_lower not in field_map:
+            error_msg = f"Error: Field '{field}' not found. Available fields: {available_fields}"
             print(f"   ❌ {error_msg}")
             return error_msg
         
-        print(f"   🔄 Attempting to update '{field}' from '{data[field]}' to '{value}'")
+        # Use the correctly cased field name
+        actual_field = field_map[field_lower]
+        
+        print(f"   🔄 Attempting to update '{actual_field}' from '{data[actual_field]}' to '{value}'")
         
         # VALIDATION: Prevent empty/meaningless updates
         if not value or value.strip() == '':
-            error_msg = f"Cannot update {field} with empty value. Only update when you have actual user-provided information."
+            error_msg = f"Cannot update {actual_field} with empty value. Only update when you have actual user-provided information."
             print(f"   ❌ {error_msg}")
             return error_msg
         
         # VALIDATION: Prevent unnecessary updates of existing data
-        current_value = data[field]
+        current_value = data[actual_field]
         if current_value is not None and str(current_value) == str(value):
-            error_msg = f"Field {field} already has value '{current_value}'. No update needed unless user provides new information."
+            error_msg = f"Field {actual_field} already has value '{current_value}'. No update needed unless user provides new information."
             print(f"   ⚠️ {error_msg}")
             return error_msg
         
         # Convert to appropriate type
-        if field in ["age", "height"]:
+        if actual_field in ["age", "height"]:
             try:
-                data[field] = int(value)
+                data[actual_field] = int(value)
             except ValueError:
-                error_msg = f"Error: {field} must be a number, got '{value}'"
+                error_msg = f"Error: {actual_field} must be a number, got '{value}'"
                 print(f"   ❌ {error_msg}")
                 return error_msg
         else:
-            data[field] = value
+            data[actual_field] = value
         
         self.save_data(data)
-        result = f"Updated {field} to {data[field]}"
+        result = f"Updated {actual_field} to {data[actual_field]}"
         print(f"   ✅ {result}")
         print(f"   📊 Data after update: {data}")
         print()
@@ -264,9 +190,20 @@ class DataManager:
         
         data = self.load_data()
         print(f"   📊 Current data: {data}")
-        print(f"   🤔 Asking about field '{field}' which currently has value: {data.get(field, 'NOT_FOUND')}")
         
-        result = f"[ASKING] {field}: {message}"
+        # Make field case-insensitive
+        field_lower = field.lower()
+        available_fields = list(data.keys())
+        field_map = {f.lower(): f for f in available_fields}
+        
+        if field_lower in field_map:
+            actual_field = field_map[field_lower]
+            print(f"   🤔 Asking about field '{actual_field}' which currently has value: {data.get(actual_field, 'NOT_FOUND')}")
+            result = f"[ASKING] {actual_field}: {message}"
+        else:
+            print(f"   🤔 Asking about field '{field}' which currently has value: NOT_FOUND")
+            result = f"[ASKING] {field}: {message}"
+        
         print(f"   📝 Result: {result}")
         print()
         return result
@@ -309,15 +246,6 @@ async def main():
     )
     
     print(f"\n📋 SETTINGS: Function={settings.function_choice_behavior.type_.value.upper()}(max:{settings.function_choice_behavior.maximum_auto_invoke_attempts}) | Temp={settings.temperature or 'def'} | MaxTok={settings.max_tokens or '∞'} | Stream={settings.stream}")
-    
-    features = []
-    if hasattr(settings, 'reasoning_effort'): features.append("reasoning")
-    if hasattr(settings, 'structured_json_response'): features.append("json")
-    if hasattr(settings, 'response_format'): features.append("format")
-    if hasattr(settings, 'tool_choice'): features.append("tool_choice")
-    if hasattr(settings, 'seed'): features.append("seed")
-    print(f"🔍 FEATURES: {' | '.join(features) if features else 'basic'}")
-    
     print(f"✅ Plugin added with functions: {[f.name for f in data_plugin.functions.values()]}")
     
     # Debug function registration details
@@ -361,7 +289,7 @@ async def main():
     print("\n=== SK KERNEL INSPECTION ===")
     
     
-    for user_input in ["I was born in 1996"]:
+    for user_input in ["I am 85"]:
         print(f"\nUser: {user_input}")
         
         # Track user message
