@@ -55,6 +55,18 @@ class LoggingChatService(OpenAIChatCompletion):
             if hasattr(kwargs['settings'], 'function_choice_behavior'):
                 print(f"  Function choice behavior: {kwargs['settings'].function_choice_behavior}")
         
+        # CRITICAL: Check if tools are actually being sent to OpenAI
+        if 'kernel' in kwargs:
+            kernel = kwargs['kernel']
+            if hasattr(kernel, 'plugins'):
+                print(f"\n🔧 TOOLS BEING SENT TO API:")
+                total_functions = 0
+                for plugin_name, plugin in kernel.plugins.items():
+                    funcs = list(plugin.functions.keys())
+                    total_functions += len(funcs)
+                    print(f"   Plugin '{plugin_name}': {funcs}")
+                print(f"   TOTAL FUNCTIONS: {total_functions}")
+        
         print("=" * 50)
         
         result = await super().get_chat_message_contents(*args, **kwargs)
@@ -212,12 +224,22 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    print(f"\n=== EXECUTION SETTINGS DEBUG ===")
-    print(f"Settings function_choice_behavior: {settings.function_choice_behavior}")
-    print(f"Settings dict: {settings}")
-    print("=" * 50)
+    print(f"\n📋 SETTINGS: Function={settings.function_choice_behavior.type_.value.upper()}(max:{settings.function_choice_behavior.maximum_auto_invoke_attempts}) | Temp={settings.temperature or 'def'} | MaxTok={settings.max_tokens or '∞'} | Stream={settings.stream}")
+    
+    features = []
+    if hasattr(settings, 'reasoning_effort'): features.append("reasoning")
+    if hasattr(settings, 'structured_json_response'): features.append("json")
+    if hasattr(settings, 'response_format'): features.append("format")
+    if hasattr(settings, 'tool_choice'): features.append("tool_choice")
+    if hasattr(settings, 'seed'): features.append("seed")
+    print(f"🔍 FEATURES: {' | '.join(features) if features else 'basic'}")
     
     print(f"✅ Plugin added with functions: {[f.name for f in data_plugin.functions.values()]}")
+    
+    # Debug function registration details
+    print(f"\n🔧 FUNCTION REGISTRATION:")
+    for func_name, func in data_plugin.functions.items():
+        print(f"   {func_name}: {func.description} | Params: {[p.name for p in func.parameters]}")
     
     print("\n=== ENHANCED PARAMETER DEBUG ===")
     for func_name, func in data_plugin.functions.items():
