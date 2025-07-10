@@ -1,254 +1,279 @@
-import json
-import os
-from datetime import datetime
-from typing import List, Dict, Any
+#!/usr/bin/env python3
+"""
+ConversationManager for tracking user/assistant messages and tool calls
+Designed for flexibility with multiple output formats and session management
+"""
+import datetime
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, asdict
+from enum import Enum
+
+class MessageType(Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+    TOOL_CALL = "tool_call"
+    TOOL_RESULT = "tool_result"
+
+@dataclass
+class ToolCall:
+    function_name: str
+    arguments: Dict[str, Any]
+    call_id: Optional[str] = None
+    
+@dataclass
+class ToolResult:
+    call_id: Optional[str]
+    function_name: str
+    result: Any
+    success: bool = True
+    error: Optional[str] = None
+
+@dataclass
+class Message:
+    role: str  # "user" or "assistant"
+    content: str
+    timestamp: str
+    message_id: str
+    session_id: str
+    tool_calls: List[ToolCall] = None
+    tool_results: List[ToolResult] = None
+    metadata: Dict[str, Any] = None
 
 class ConversationManager:
-    """Manages clean conversation history separate from LLM context with session support"""
+    """
+    Manages conversation history with separation of user/assistant messages
+    and detailed tool call tracking
+    """
     
-    def __init__(self, user_id: str = "user", session_based: bool = True, conversations_path: str = None):
-        self.user_id = user_id
-        self.session_based = session_based
-        self.current_session_id = self._generate_session_id() if session_based else None
+    def __init__(self, session_id: Optional[str] = None):
+        self.session_id = session_id or self._generate_session_id()
+        self.messages: List[Message] = []
+        self.message_counter = 0
         
-        # Use provided conversations_path or default to user folder
-        if conversations_path:
-            self.base_path = conversations_path
-        else:
-            self.base_path = f"/Users/dogapoyraztahan/_repos/heltia/onboarding_assistant/data/{user_id}"
-        
-        if session_based:
-            self.conversation_path = f"{self.base_path}/{self.current_session_id}.json"
-            self.conversation_history = []  # Always start fresh for sessions
-        else:
-            self.conversation_path = f"{self.base_path}/conversation_history.json"
-            self.conversation_history = self._load_conversation_history()
-    
     def _generate_session_id(self) -> str:
-        """Generate unique session ID"""
-        from datetime import datetime
-        return datetime.now().strftime("%Y%m%d_%H%M%S")
+        """Generate a unique session ID"""
+        return f"session_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
-    def _load_conversation_history(self) -> List[Dict[str, Any]]:
-        """Load conversation history from file"""
-        try:
-            if os.path.exists(self.conversation_path):
-                with open(self.conversation_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get("messages", [])
-            return []
-        except Exception as e:
-            print(f"Error loading conversation history: {e}")
-            return []
+    def _generate_message_id(self) -> str:
+        """Generate a unique message ID within this session"""
+        self.message_counter += 1
+        return f"{self.session_id}_msg_{self.message_counter:03d}"
     
-    def _save_conversation_history(self):
-        """Save conversation history to file"""
-        try:
-            # Ensure directory exists
-            os.makedirs(self.base_path, exist_ok=True)
+    def add_user_message(self, content: str, metadata: Dict[str, Any] = None) -> str:
+        """Add a user message to the conversation"""
+        message_id = self._generate_message_id()
+        
+        message = Message(
+            role=MessageType.USER.value,
+            content=content,
+            timestamp=datetime.datetime.now().isoformat(),
+            message_id=message_id,
+            session_id=self.session_id,
+            metadata=metadata or {}
+        )
+        
+        self.messages.append(message)
+        return message_id
+    
+    def add_assistant_message(
+        self, 
+        content: str, 
+        sk_response = None,
+        metadata: Dict[str, Any] = None
+    ) -> str:
+        """
+        Add an assistant message, extracting tool calls from SK response
+        
+        Args:
+            content: The text content of the assistant's response
+            sk_response: The full Semantic Kernel response object
+            metadata: Additional metadata to store
+        """
+        message_id = self._generate_message_id()
+        
+        # Extract tool calls from SK response if available
+        tool_calls = []
+        tool_results = []
+        
+        if sk_response and hasattr(sk_response, 'value') and sk_response.value:
+            chat_message = sk_response.value[0] if sk_response.value else None
             
-            data = {
-                "user_id": self.user_id,
-                "session_id": self.current_session_id if self.session_based else "persistent",
-                "session_based": self.session_based,
-                "created_at": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat(),
-                "total_messages": len(self.conversation_history),
-                "messages": self.conversation_history
-            }
-            
-            with open(self.conversation_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            if chat_message:
+                # Extract tool calls from metadata or function_call_results
+                if hasattr(chat_message, 'metadata') and chat_message.metadata:
+                    # Look for tool calls in metadata
+                    if 'tool_calls' in chat_message.metadata:
+                        for tool_call in chat_message.metadata['tool_calls']:
+                            tool_calls.append(ToolCall(
+                                function_name=tool_call.get('function', {}).get('name', ''),
+                                arguments=tool_call.get('function', {}).get('arguments', {}),
+                                call_id=tool_call.get('id')
+                            ))
                 
-        except Exception as e:
-            print(f"Error saving conversation history: {e}")
+                # Extract function call results if available
+                if hasattr(chat_message, 'items') and chat_message.items:
+                    for item in chat_message.items:
+                        if hasattr(item, 'function_call_result'):
+                            tool_results.append(ToolResult(
+                                call_id=None,  # May not be available
+                                function_name=item.function_call_result.function_name,
+                                result=item.function_call_result.result,
+                                success=True
+                            ))
+        
+        message = Message(
+            role=MessageType.ASSISTANT.value,
+            content=content,
+            timestamp=datetime.datetime.now().isoformat(),
+            message_id=message_id,
+            session_id=self.session_id,
+            tool_calls=tool_calls if tool_calls else None,
+            tool_results=tool_results if tool_results else None,
+            metadata=metadata or {}
+        )
+        
+        self.messages.append(message)
+        return message_id
     
-    def add_user_message(self, message: str):
-        """Add a clean user message to history"""
-        self.conversation_history.append({
-            "role": "user",
-            "content": message.strip(),
-            "timestamp": datetime.now().isoformat()
-        })
-        self._save_conversation_history()
+    def add_tool_call_manually(
+        self, 
+        function_name: str, 
+        arguments: Dict[str, Any], 
+        result: Any,
+        success: bool = True,
+        error: Optional[str] = None
+    ) -> str:
+        """
+        Manually add a tool call and result (for cases where SK doesn't capture it)
+        """
+        message_id = self._generate_message_id()
+        
+        tool_call = ToolCall(
+            function_name=function_name,
+            arguments=arguments,
+            call_id=f"manual_{message_id}"
+        )
+        
+        tool_result = ToolResult(
+            call_id=tool_call.call_id,
+            function_name=function_name,
+            result=result,
+            success=success,
+            error=error
+        )
+        
+        message = Message(
+            role="tool_execution",
+            content=f"Tool call: {function_name}({arguments}) -> {result}",
+            timestamp=datetime.datetime.now().isoformat(),
+            message_id=message_id,
+            session_id=self.session_id,
+            tool_calls=[tool_call],
+            tool_results=[tool_result]
+        )
+        
+        self.messages.append(message)
+        return message_id
     
-    def add_assistant_message(self, message: str):
-        """Add a clean assistant message to history"""
-        # Clean the message of any function call artifacts
-        cleaned_message = self._clean_assistant_message(message)
-        
-        self.conversation_history.append({
-            "role": "assistant", 
-            "content": cleaned_message,
-            "timestamp": datetime.now().isoformat()
-        })
-        self._save_conversation_history()
+    # === RETRIEVAL METHODS ===
     
-    def add_widget_exchange(self, question: str, answer: str):
-        """Add widget question and answer as natural conversation"""
-        # Add widget question as system message (different from assistant)
-        self.conversation_history.append({
-            "role": "system",
-            "content": f"📋 Widget Question: {question.strip()}",
-            "timestamp": datetime.now().isoformat(),
-            "type": "widget_question"
-        })
-        
-        # Add widget answer as user message  
-        self.conversation_history.append({
-            "role": "user",
-            "content": answer.strip(),
-            "timestamp": datetime.now().isoformat(),
-            "type": "widget_answer"
-        })
-        
-        self._save_conversation_history()
+    def get_all_messages(self) -> List[Message]:
+        """Get all messages in chronological order"""
+        return self.messages.copy()
     
-    def _clean_assistant_message(self, message: str) -> str:
-        """Clean assistant message of function calls and artifacts"""
-        import re
-        
-        # Remove function call patterns
-        cleaned = re.sub(r'\[Call[^\]]*\]', '', message)
-        cleaned = re.sub(r'\[\]', '', cleaned)
-        cleaned = re.sub(r'trigger_widget\(\)', '', cleaned)
-        cleaned = re.sub(r'get_user_status\(\)', '', cleaned)
-        cleaned = re.sub(r'get_questions\(\)', '', cleaned)
-        cleaned = re.sub(r'get_question_details\([^)]*\)', '', cleaned)
-        cleaned = re.sub(r'ask_question\([^)]*\)', '', cleaned)
-        cleaned = re.sub(r'update_user_data\([^)]*\)', '', cleaned)
-        cleaned = re.sub(r'Widget completed: [^\n]*', '', cleaned)
-        
-        # Remove Gemini 2.5-flash specific patterns
-        cleaned = re.sub(r'<call:>[^>]*', '', cleaned)
-        cleaned = re.sub(r'<call:>', '', cleaned)
-        cleaned = re.sub(r'```tool_code[^`]*```', '', cleaned)
-        
-        # Remove repetitive phrases and duplicates
-        sentences = [s.strip() for s in cleaned.split('.') if s.strip()]
-        unique_sentences = []
-        seen = set()
-        
-        for sentence in sentences:
-            if sentence.lower() not in seen and len(sentence) > 5:
-                unique_sentences.append(sentence)
-                seen.add(sentence.lower())
-        
-        cleaned = '. '.join(unique_sentences)
-        if cleaned and not cleaned.endswith('.'):
-            cleaned += '.'
-            
-        # Remove extra whitespace
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-        
-        return cleaned
+    def get_user_messages(self) -> List[Message]:
+        """Get only user messages"""
+        return [msg for msg in self.messages if msg.role == MessageType.USER.value]
     
-    def get_conversation_for_llm(self) -> str:
-        """Get conversation history formatted for LLM context"""
-        if not self.conversation_history:
-            return ""
+    def get_assistant_messages(self) -> List[Message]:
+        """Get only assistant messages"""
+        return [msg for msg in self.messages if msg.role == MessageType.ASSISTANT.value]
+    
+    def get_tool_calls_history(self) -> List[Dict[str, Any]]:
+        """Get all tool calls and their results"""
+        tool_history = []
         
-        formatted = []
-        for msg in self.conversation_history[-10:]:  # Last 10 messages for context
-            if msg["role"] == "user":
-                role = "Kullanıcı"
-            elif msg["role"] == "system":
-                role = "Sistem"
-            else:
-                role = "Asistan"
-            formatted.append(f"{role}: {msg['content']}")
+        for msg in self.messages:
+            if msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    # Find corresponding result
+                    result = None
+                    if msg.tool_results:
+                        result = next((r for r in msg.tool_results 
+                                     if r.call_id == tool_call.call_id), None)
+                    
+                    tool_history.append({
+                        'timestamp': msg.timestamp,
+                        'message_id': msg.message_id,
+                        'function_name': tool_call.function_name,
+                        'arguments': tool_call.arguments,
+                        'result': result.result if result else None,
+                        'success': result.success if result else None,
+                        'error': result.error if result else None
+                    })
         
-        return "\n".join(formatted)
+        return tool_history
     
-    def get_conversation_for_display(self) -> List[Dict[str, Any]]:
-        """Get conversation history for display purposes"""
-        return self.conversation_history.copy()
-    
-    def clear_history(self):
-        """Clear conversation history"""
-        self.conversation_history = []
-        self._save_conversation_history()
-    
-    def get_last_message(self, role: str = None) -> Dict[str, Any]:
-        """Get the last message, optionally filtered by role"""
-        if not self.conversation_history:
-            return None
-            
-        if role:
-            for msg in reversed(self.conversation_history):
-                if msg["role"] == role:
-                    return msg
-            return None
-        else:
-            return self.conversation_history[-1]
-    
-    def export_conversation(self) -> str:
-        """Export conversation as readable text"""
-        if not self.conversation_history:
-            return "Henüz konuşma geçmişi yok."
+    def get_conversation_summary(self) -> Dict[str, Any]:
+        """Get a summary of the conversation"""
+        user_msgs = self.get_user_messages()
+        assistant_msgs = self.get_assistant_messages()
+        tool_calls = self.get_tool_calls_history()
         
-        session_info = f" - Oturum {self.current_session_id}" if self.session_based else ""
-        formatted = [f"📞 Konuşma Geçmişi - {self.user_id}{session_info}"]
-        formatted.append("=" * 50)
-        
-        for i, msg in enumerate(self.conversation_history, 1):
-            if msg["role"] == "user":
-                role_icon = "👤"
-                role_name = "Sen"
-            elif msg["role"] == "system":
-                role_icon = "📋"
-                role_name = "Widget"
-            else:
-                role_icon = "🤖"
-                role_name = "Asistan"
-            
-            timestamp = msg.get("timestamp", "")[:19].replace("T", " ")
-            
-            formatted.append(f"\n{i:2d}. {role_icon} {role_name} ({timestamp}):")
-            formatted.append(f"    {msg['content']}")
-        
-        return "\n".join(formatted)
-    
-    def get_session_files(self) -> List[str]:
-        """Get list of session files for this user"""
-        if not os.path.exists(self.base_path):
-            return []
-        
-        session_files = []
-        for filename in os.listdir(self.base_path):
-            if filename.endswith(".json") and filename != "conversation_history.json":
-                session_files.append(os.path.join(self.base_path, filename))
-        
-        return sorted(session_files, reverse=True)  # Most recent first
-    
-    def load_session(self, session_id: str):
-        """Load a specific session"""
-        session_path = f"{self.base_path}/{session_id}.json"
-        if os.path.exists(session_path):
-            try:
-                with open(session_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    self.conversation_history = data.get("messages", [])
-                    self.current_session_id = session_id
-                    self.conversation_path = session_path
-                    return True
-            except Exception as e:
-                print(f"Error loading session {session_id}: {e}")
-        return False
-    
-    def start_new_session(self):
-        """Start a new session (only for session-based mode)"""
-        if self.session_based:
-            self.current_session_id = self._generate_session_id()
-            self.conversation_path = f"{self.base_path}/{self.current_session_id}.json"
-            self.conversation_history = []
-            print(f"🔄 Yeni oturum başlatıldı: {self.current_session_id}")
-    
-    def get_current_session_info(self) -> Dict[str, Any]:
-        """Get information about current session"""
         return {
-            "session_id": self.current_session_id,
-            "session_based": self.session_based,
-            "message_count": len(self.conversation_history),
-            "session_file": self.conversation_path
+            'session_id': self.session_id,
+            'total_messages': len(self.messages),
+            'user_messages': len(user_msgs),
+            'assistant_messages': len(assistant_msgs),
+            'tool_calls': len(tool_calls),
+            'start_time': self.messages[0].timestamp if self.messages else None,
+            'end_time': self.messages[-1].timestamp if self.messages else None,
+            'functions_used': list(set(tc['function_name'] for tc in tool_calls))
         }
+    
+    # === EXPORT METHODS (Future extensibility) ===
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert entire conversation to dictionary"""
+        return {
+            'session_id': self.session_id,
+            'messages': [asdict(msg) for msg in self.messages],
+            'summary': self.get_conversation_summary()
+        }
+    
+    def to_json_string(self) -> str:
+        """Convert to JSON string (for future JSON export)"""
+        import json
+        return json.dumps(self.to_dict(), indent=2, default=str)
+    
+    def print_conversation(self, include_tool_calls: bool = True):
+        """Print a formatted view of the conversation"""
+        print(f"\n=== CONVERSATION HISTORY ({self.session_id}) ===")
+        
+        for msg in self.messages:
+            timestamp = msg.timestamp.split('T')[1][:8]  # Just time part
+            
+            if msg.role == MessageType.USER.value:
+                print(f"\n[{timestamp}] 👤 USER:")
+                print(f"  {msg.content}")
+            
+            elif msg.role == MessageType.ASSISTANT.value:
+                print(f"\n[{timestamp}] 🤖 ASSISTANT:")
+                print(f"  {msg.content}")
+                
+                if include_tool_calls and msg.tool_calls:
+                    print(f"  🔧 TOOL CALLS:")
+                    for tool_call in msg.tool_calls:
+                        print(f"    - {tool_call.function_name}({tool_call.arguments})")
+                        
+                        if msg.tool_results:
+                            result = next((r for r in msg.tool_results 
+                                         if r.call_id == tool_call.call_id), None)
+                            if result:
+                                print(f"      → {result.result}")
+        
+        print(f"\n=== SUMMARY ===")
+        summary = self.get_conversation_summary()
+        for key, value in summary.items():
+            print(f"{key}: {value}")
+        print("=" * 50)
