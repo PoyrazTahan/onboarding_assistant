@@ -3,7 +3,13 @@
 Simple agent for learning Semantic Kernel basics
 Goal: Update data.json through conversation until all fields are filled
 """
+#%%
+import nest_asyncio
+import asyncio
+import aiohttp
+nest_asyncio.apply()
 
+#%%
 import os
 import json
 import asyncio
@@ -183,9 +189,6 @@ async def main():
     
     # Get API key
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("❌ Please set OPENAI_API_KEY in your .env file")
-        return
     
     # Create kernel
     kernel = sk.Kernel()
@@ -210,7 +213,6 @@ async def main():
     )
     
     print(f"\n=== EXECUTION SETTINGS DEBUG ===")
-    print(f"Settings type: {type(settings)}")
     print(f"Settings function_choice_behavior: {settings.function_choice_behavior}")
     print(f"Settings dict: {settings}")
     print("=" * 50)
@@ -235,7 +237,9 @@ async def main():
     # Get current data status and add to prompt
     current_status = data_manager.get_data_status()
     prompt = f"{base_prompt}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
-    print(prompt)
+    
+    print(f"📝 PROMPT LENGTH: {len(prompt)} characters")
+    print(f"📊 DATA STATUS: {len([k for k, v in data_manager.load_data().items() if v is not None])}/3 fields filled")
      
     # Create chat function
     chat_function = kernel.add_function(
@@ -251,29 +255,52 @@ async def main():
     chat_service = kernel.get_service("openai")
     print(f"Chat service type: {type(chat_service)}")
     
-    for user_input in ["I weigh eighty"]:
+    for user_input in ["I was born in 1996"]:
         print(f"\nUser: {user_input}")
 
+        print("Testing direct invoke...")
+        # Try using KernelArguments to pass settings
+        arguments = KernelArguments(
+            user_input=user_input,
+            settings=settings
+        )
         try:
-            print("Testing direct invoke...")
-            # Try using KernelArguments to pass settings
-            arguments = KernelArguments(
-                user_input=user_input,
-                settings=settings
-            )
             response = await kernel.invoke(
                 chat_function,
                 arguments
-            )
-            print(f"Assistant: {response}")
-
-            # Check if functions were called
-            print(f"Data after invoke: {data_manager.load_data()}")
+            )   
         except Exception as e:
             print(f"❌ Invoke Error: {e}")
             import traceback
             traceback.print_exc()
-    
+            
+        # Extract clean response and metrics
+        print(f"\n=== API CALL SUMMARY ===")
+        
+        # Get the actual response content
+        chat_message = response.value[0]  # First (and only) message
+        clean_response = chat_message.content
+        
+        # Extract token usage from metadata
+        usage = chat_message.metadata.get('usage')
+        if usage:
+            print(f"📊 TOKEN USAGE:")
+            print(f"   INPUT  - Prompt tokens: {usage.prompt_tokens}")
+            print(f"   OUTPUT - Completion tokens: {usage.completion_tokens}")
+            print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
+            print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
+            # print(f"   TOTAL: {usage.total_tokens}")
+        
+        print(f"\n💬 ASSISTANT RESPONSE:")
+        print(clean_response)
+        print("=" * 50)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        # Check if functions were called
+        print(f"Data after invoke: {data_manager.load_data()}")
+
+    
+#%%
+# if __name__ == "__main__":
+#     asyncio.run(main())
+
+# %%
