@@ -143,11 +143,10 @@ class DataManager:
         
         # Update function call result in conversation manager
         if self.conversation_manager:
-            self.conversation_manager.add_tool_call_manually(
-                function_name="update_data",
-                arguments={"field": field, "value": value},
-                result=result,
-                success=True
+            self.conversation_manager.add_function_call(
+                "update_data",
+                {"field": field, "value": value},
+                result
             )
         
         return result
@@ -195,11 +194,10 @@ class DataManager:
         
         # Update function call result in conversation manager
         if self.conversation_manager:
-            self.conversation_manager.add_tool_call_manually(
-                function_name="ask_question",
-                arguments={"field": field, "message": message},
-                result=result,
-                success=True
+            self.conversation_manager.add_function_call(
+                "ask_question",
+                {"field": field, "message": message},
+                result
             )
         
         return result

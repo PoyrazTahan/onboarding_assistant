@@ -21,7 +21,7 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 # Import our utilities
 from utils.conversation_manager import ConversationManager
-from utils.logging_chat_service import LoggingChatService
+from utils.logging_service import LoggingService
 from utils.data_manager import DataManager
 
 # Check for debug flag
@@ -65,6 +65,9 @@ async def main():
     
     print("🧪 Testing Simple Data Collection Agent...")
     
+    # Initialize data manager first
+    data_manager = DataManager()
+    
     # Initialize conversation manager
     conv_manager = ConversationManager()
     print(f"📝 Started conversation session: {conv_manager.session_id}")
@@ -76,7 +79,7 @@ async def main():
     kernel = sk.Kernel()
     
     # Add OpenAI service with logging
-    chat_service = LoggingChatService(
+    chat_service = LoggingService(
         ai_model_id="gpt-4o-mini",
         api_key=api_key,
         service_id="openai"
@@ -84,10 +87,10 @@ async def main():
     kernel.add_service(chat_service)
     
     # Connect chat service to conversation manager
-    chat_service.set_conversation_manager(conv_manager)
+    chat_service.__dict__['conversation_manager'] = conv_manager
     
-    # Add data manager plugin with conversation manager
-    data_manager = DataManager(conversation_manager=conv_manager)
+    # Update data manager with conversation manager
+    data_manager.conversation_manager = conv_manager
     data_plugin = kernel.add_plugin(
         plugin=data_manager,
         plugin_name="data_plugin"
@@ -97,13 +100,33 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    # Load prompt from file and add current data status
+    # Load prompt from file and add conversation history + current data status
     with open("prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
     
-    # Get current data status and add to prompt
+    # Get conversation history and current data status
+    conversation_history = conv_manager.get_history_for_prompt()
     current_status = data_manager.get_data_status()
-    prompt = f"{base_prompt}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
+    
+    # Determine if we need initial greeting
+    data = data_manager.load_data()
+    has_data = any(value is not None for value in data.values())
+    
+    if has_data:
+        initial_greeting = "Can I ask you a few more questions to understand you better?"
+    else:
+        initial_greeting = "Hey there! I am Nora do you have couple of minutes for me to ask you couple of questions?"
+    
+    # Build comprehensive prompt - check if this is first interaction
+    if conversation_history == "No previous conversation.":
+        # First interaction - add greeting as assistant's opening and track it
+        conv_manager.add_message('assistant', initial_greeting)
+        # Update conversation history after adding greeting
+        conversation_history = conv_manager.get_history_for_prompt()
+        prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
+    else:
+        # Ongoing conversation - include full history
+        prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
     
     print(f"📝 PROMPT LENGTH: {len(prompt)} characters")
     print(f"📊 DATA STATUS: {len([k for k, v in data_manager.load_data().items() if v is not None])}/3 fields filled")
@@ -117,6 +140,9 @@ async def main():
 
     if DEBUG_MODE:
         debug_function_registration(settings, data_plugin, kernel)
+        print(f"\n=== DEBUG: CONVERSATION HISTORY ===")
+        print(conversation_history)
+        print("=" * 40)
     
     for user_input in ["Hello, I need help filling out my data."]:
         # Track user message
@@ -124,9 +150,7 @@ async def main():
         print(f"\n\nFULL PROMPT:\n======================")
         print(prompt)
         
-        conv_manager.add_user_message(user_input)
-
-        print("Testing direct invoke...")
+        conv_manager.add_message('user', user_input)
         # Try using KernelArguments to pass settings
         arguments = KernelArguments(
             user_input=user_input,
@@ -146,15 +170,8 @@ async def main():
         chat_message = response.value[0]  # First (and only) message
         clean_response = chat_message.content
         
-        # Track assistant message with SK response for tool extraction
-        conv_manager.add_assistant_message(
-            content=clean_response,
-            sk_response=response,
-            metadata={
-                'model': 'gpt-4o-mini',
-                'function_choice_behavior': str(settings.function_choice_behavior.type_.value)
-            }
-        )
+        # Track assistant message
+        conv_manager.add_message('assistant', clean_response)
         
         # Extract clean response and metrics
         print(f"\n=== API CALL SUMMARY ===")
@@ -166,15 +183,8 @@ async def main():
         print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
         print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
         
-        # Print conversation summary
-        summary = conv_manager.get_conversation_summary()
-        print(f"\n=== CONVERSATION TRACKING ===")
-        print(f"Messages: {summary['user_messages']} user, {summary['assistant_messages']} assistant")
-        print(f"Tool calls: {summary['tool_calls']}")
-        print(f"Functions used: {summary['functions_used']}")
-        
-        # Print detailed conversation in turns
-        conv_manager.print_conversation_turns()
+        # Print conversation flow
+        conv_manager.print_session_flow()
 
     
 #%%
