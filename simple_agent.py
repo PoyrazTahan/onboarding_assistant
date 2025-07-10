@@ -20,7 +20,7 @@ from semantic_kernel.connectors.ai.open_ai import OpenAIChatPromptExecutionSetti
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 # Import our utilities
-from utils.conversation_manager import ConversationManager
+from utils.session_manager import Session
 from utils.logging_service import LoggingService
 from utils.data_manager import DataManager
 
@@ -65,12 +65,12 @@ async def main():
     
     print("🧪 Testing Simple Data Collection Agent...")
     
+    # Initialize session
+    session = Session()
+    print(f"📝 Started session: {session.id}")
+    
     # Initialize data manager first
     data_manager = DataManager()
-    
-    # Initialize conversation manager
-    conv_manager = ConversationManager()
-    print(f"📝 Started conversation session: {conv_manager.session_id}")
     
     # Get API key
     api_key = os.getenv("OPENAI_API_KEY")
@@ -86,11 +86,10 @@ async def main():
     )
     kernel.add_service(chat_service)
     
-    # Connect chat service to conversation manager
-    chat_service.__dict__['conversation_manager'] = conv_manager
+    # Connect chat service to session
+    chat_service.__dict__['session'] = session
     
-    # Update data manager with conversation manager
-    data_manager.conversation_manager = conv_manager
+    # Add data plugin
     data_plugin = kernel.add_plugin(
         plugin=data_manager,
         plugin_name="data_plugin"
@@ -100,16 +99,18 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    # Load prompt from file and add conversation history + current data status
+    # Load prompt from file
     with open("prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
     
-    # Get conversation history and current data status
-    conversation_history = conv_manager.get_history_for_prompt()
+    # Get current data status
+    data = data_manager.load_data()
     current_status = data_manager.get_data_status()
     
+    # Update session's data state
+    session.data_state = data.copy()
+    
     # Determine if we need initial greeting
-    data = data_manager.load_data()
     has_data = any(value is not None for value in data.values())
     
     if has_data:
@@ -117,19 +118,21 @@ async def main():
     else:
         initial_greeting = "Hey there! I am Nora do you have couple of minutes for me to ask you couple of questions?"
     
-    # Build comprehensive prompt - check if this is first interaction
-    if conversation_history == "No previous conversation.":
-        # First interaction - add greeting as assistant's opening and track it
-        conv_manager.add_message('assistant', initial_greeting)
+    # Get conversation history
+    conversation_history = session.get_conversation_history()
+    
+    # Check if this is first interaction (no blocks yet)
+    if not session.blocks:
+        # Add programmatic greeting block
+        session.add_programmatic_block(initial_greeting, block_type="greeting")
         # Update conversation history after adding greeting
-        conversation_history = conv_manager.get_history_for_prompt()
-        prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
-    else:
-        # Ongoing conversation - include full history
-        prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
+        conversation_history = session.get_conversation_history()
+    
+    # Build comprehensive prompt
+    prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
     
     print(f"📝 PROMPT LENGTH: {len(prompt)} characters")
-    print(f"📊 DATA STATUS: {len([k for k, v in data_manager.load_data().items() if v is not None])}/3 fields filled")
+    print(f"📊 DATA STATUS: {len([k for k, v in data.items() if v is not None])}/3 fields filled")
      
     # Create chat function
     chat_function = kernel.add_function(
@@ -145,12 +148,28 @@ async def main():
         print("=" * 40)
     
     for user_input in ["Hello, I need help filling out my data."]:
-        # Track user message
+        # Get available functions for context
+        available_functions = []
+        for plugin_name, plugin in kernel.plugins.items():
+            if plugin_name != 'chat_plugin':
+                available_functions.extend(list(plugin.functions.keys()))
+        
+        # Start AI block with full context
+        block_id = session.start_ai_block(
+            user_input=user_input,
+            full_prompt=prompt.replace("{{$user_input}}", user_input),
+            functions_available=available_functions,
+            data_snapshot=data.copy()
+        )
+        
+        # Update data manager and chat service with current block
+        data_manager.session = session
+        data_manager.current_block_id = block_id
+        chat_service.__dict__['current_block_id'] = block_id
         
         print(f"\n\nFULL PROMPT:\n======================")
         print(prompt)
         
-        conv_manager.add_message('user', user_input)
         # Try using KernelArguments to pass settings
         arguments = KernelArguments(
             user_input=user_input,
@@ -170,8 +189,8 @@ async def main():
         chat_message = response.value[0]  # First (and only) message
         clean_response = chat_message.content
         
-        # Track assistant message
-        conv_manager.add_message('assistant', clean_response)
+        # Complete the AI block
+        session.complete_ai_block(block_id, str(response.value), clean_response)
         
         # Extract clean response and metrics
         print(f"\n=== API CALL SUMMARY ===")
@@ -183,8 +202,14 @@ async def main():
         print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
         print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
         
-        # Print conversation flow
-        conv_manager.print_session_flow()
+        # Print session flow
+        session.print_session_flow()
+        
+        # Optional: save session for debugging
+        if DEBUG_MODE:
+            os.makedirs("data/sessions", exist_ok=True)
+            session.save_to_file()
+            print(f"\n💾 Session saved to: data/sessions/{session.id}.json")
 
     
 #%%

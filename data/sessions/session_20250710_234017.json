@@ -1,0 +1,52 @@
+{
+  "id": "session_20250710_234017",
+  "created_at": "2025-07-10T23:40:17.913323",
+  "blocks": [
+    {
+      "id": "dcc1c61f",
+      "type": "programmatic",
+      "subtype": "greeting",
+      "content": "Hey there! I am Nora do you have couple of minutes for me to ask you couple of questions?",
+      "timestamp": "2025-07-10T23:40:17.937381"
+    },
+    {
+      "id": "8ba038e0",
+      "type": "ai_interaction",
+      "user_input": "Hello, I need help filling out my data.",
+      "context": {
+        "full_prompt": "You are a helpful onboarding assistant that collects user data.\n\nMANDATORY FIRST STEP - ALWAYS ANALYZE USER INPUT:\nBefore doing anything else, carefully read what the user said and extract ANY information they provided:\n- Age statements \u2192 extract age (e.g., \"I am 25\", \"I'm 30\", \"25 years old\" = age)\n- Birth year \u2192 calculate age (e.g., \"born in 1996\" = age 27 in 2025)\n- Weight mentions \u2192 extract weight value (e.g., \"I weigh 70kg\", \"85 pounds\", \"I am 85\" could be weight)\n- Height mentions \u2192 extract height value\n- Direct statements \u2192 extract direct values\n\nWORKFLOW - EXECUTE IN ORDER:\n1. EXTRACT: What information did the user actually provide?\n   - Extract values from user input (e.g., \"born in 1996\" = age 27)\n   - Compare extracted values with RECORDED USER DATA\n   - If extracted value is NEW or DIFFERENT \u2192 proceed to UPDATE\n   - If extracted value MATCHES existing data \u2192 SKIP UPDATE (no action needed)\n   - If user provided nothing \u2192 proceed to ASK\n\n2. UPDATE: For each NEW/DIFFERENT piece of extracted information\n   - Use update_data(field, value) to save extracted values\n   - ONLY update when extracted value differs from recorded data\n   - Complete ALL updates before asking questions\n\n3. ASK: After all updates are complete\n   - Use ask_question() for the first missing field\n   - Ask ONE question only: age \u2192 weight \u2192 height\n\nCRITICAL EXAMPLES:\n- User: \"I am 85\" (age=null) \u2192 EXTRACT age=85 \u2192 UPDATE age \u2192 ASK for weight\n- User: \"I was born in 1996\" (age=null) \u2192 EXTRACT age=27 \u2192 UPDATE age \u2192 ASK for weight\n- User: \"I was born in 1996\" (age=27) \u2192 EXTRACT age=27 \u2192 MATCHES recorded \u2192 SKIP update \u2192 ASK for weight\n- User: \"I'm 25\" (age=27) \u2192 EXTRACT age=25 \u2192 DIFFERS from recorded \u2192 UPDATE age \u2192 ASK for weight\n- User: \"Hello\" \u2192 EXTRACT nothing \u2192 ASK for age\n\nIMPORTANT: If extracted value matches recorded data, DO NOT call update_data(). Just proceed to ASK phase.\n\nCONVERSATION HISTORY:\nAssistant: Hey there! I am Nora do you have couple of minutes for me to ask you couple of questions?\n\nCURRENT DATA STATUS:\n=== RECORDED USER DATA ===\n\u2022 No data recorded yet\n\n=== MISSING FIELDS ===\n\u2022 Age: null\n\u2022 Weight: null\n\u2022 Height: null\n\n=== WORKFLOW GUIDANCE ===\n\u2022 NEXT ACTION: Ask question for 'age' field\n\nUser: Hello, I need help filling out my data.\nAssistant: ",
+        "functions_available": [
+          "ask_question",
+          "update_data"
+        ],
+        "data_state_snapshot": {
+          "age": null,
+          "weight": null,
+          "height": null
+        },
+        "timestamp_start": "2025-07-10T23:40:17.937787"
+      },
+      "response": {
+        "raw_response": "[ChatMessageContent(inner_content=ChatCompletion(id='chatcmpl-BrsM13UApiSkvFiSxXqjPMKItXTzZ', choices=[Choice(finish_reason='stop', index=0, logprobs=None, message=ChatCompletionMessage(content='I just asked you for your age. Could you please provide it?', refusal=None, role='assistant', annotations=[], audio=None, function_call=None, tool_calls=None))], created=1752180021, model='gpt-4o-mini-2024-07-18', object='chat.completion', service_tier='default', system_fingerprint=None, usage=CompletionUsage(completion_tokens=15, prompt_tokens=757, total_tokens=772, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0))), ai_model_id='gpt-4o-mini', metadata={'logprobs': None, 'id': 'chatcmpl-BrsM13UApiSkvFiSxXqjPMKItXTzZ', 'created': 1752180021, 'system_fingerprint': None, 'usage': CompletionUsage(prompt_tokens=757, prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0), completion_tokens=15, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0))}, content_type='message', role=<AuthorRole.ASSISTANT: 'assistant'>, name=None, items=[TextContent(inner_content=None, ai_model_id=None, metadata={}, content_type='text', text='I just asked you for your age. Could you please provide it?', encoding=None)], encoding=None, finish_reason=<FinishReason.STOP: 'stop'>, status=None)]",
+        "actions": [
+          {
+            "function": "ask_question",
+            "arguments": {
+              "field": "age",
+              "message": "Could you please tell me your age?"
+            },
+            "result": "[ASKING] age: Could you please tell me your age?",
+            "timestamp": "2025-07-10T23:40:20.957057"
+          }
+        ],
+        "final_message": "I just asked you for your age. Could you please provide it?",
+        "timestamp_end": "2025-07-10T23:40:21.665127"
+      }
+    }
+  ],
+  "data_state": {
+    "age": null,
+    "weight": null,
+    "height": null
+  }
+}

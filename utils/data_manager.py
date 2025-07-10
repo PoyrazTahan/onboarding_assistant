@@ -11,9 +11,10 @@ from semantic_kernel.prompt_template.input_variable import InputVariable
 class DataManager:
     """Manages the simple data.json file"""
     
-    def __init__(self, data_file="data/data.json", conversation_manager=None):
+    def __init__(self, data_file="data/data.json", session=None, current_block_id=None):
         self.data_file = data_file
-        self.conversation_manager = conversation_manager
+        self.session = session
+        self.current_block_id = current_block_id
         
     def load_data(self):
         """Load data from JSON file"""
@@ -141,9 +142,10 @@ class DataManager:
         print(f"   📊 Data after update: {data}")
         print()
         
-        # Update function call result in conversation manager
-        if self.conversation_manager:
-            self.conversation_manager.add_function_call(
+        # Add action to current block in session
+        if self.session and self.current_block_id:
+            self.session.add_action_to_block(
+                self.current_block_id,
                 "update_data",
                 {"field": field, "value": value},
                 result
@@ -192,9 +194,10 @@ class DataManager:
         print(f"   📝 Result: {result}")
         print()
         
-        # Update function call result in conversation manager
-        if self.conversation_manager:
-            self.conversation_manager.add_function_call(
+        # Add action to current block in session
+        if self.session and self.current_block_id:
+            self.session.add_action_to_block(
+                self.current_block_id,
                 "ask_question",
                 {"field": field, "message": message},
                 result

@@ -11,7 +11,8 @@ class LoggingService(OpenAIChatCompletion):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Use __dict__ to bypass Pydantic validation
-        self.__dict__['conversation_manager'] = None
+        self.__dict__['session'] = None
+        self.__dict__['current_block_id'] = None
     
     async def get_chat_message_contents(self, *args, **kwargs):
         print(f"\n🔄 API CALL")
@@ -28,8 +29,8 @@ class LoggingService(OpenAIChatCompletion):
         # Make the actual API call
         result = await super().get_chat_message_contents(*args, **kwargs)
         
-        # Track function calls
-        if self.__dict__.get('conversation_manager') and result:
+        # Track function calls in session
+        if self.__dict__.get('session') and self.__dict__.get('current_block_id') and result:
             messages = result if isinstance(result, list) else []
             for msg in messages:
                 if hasattr(msg, 'items'):
@@ -38,8 +39,9 @@ class LoggingService(OpenAIChatCompletion):
                             r = item.function_call_result
                             print(f"   🔧 {r.function_name} → {r.result}")
                             
-                            # Let conversation manager know about the function call
-                            self.__dict__['conversation_manager'].add_function_call(
+                            # Add action to current block
+                            self.__dict__['session'].add_action_to_block(
+                                self.__dict__['current_block_id'],
                                 r.function_name,
                                 {},  # We don't have args here
                                 r.result
