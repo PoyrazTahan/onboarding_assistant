@@ -118,8 +118,12 @@ async def main():
     if DEBUG_MODE:
         debug_function_registration(settings, data_plugin, kernel)
     
-    for user_input in ["I am 85"]:
+    for user_input in ["Hello, I need help filling out my data."]:
         # Track user message
+        
+        print(f"\n\nFULL PROMPT:\n======================")
+        print(prompt)
+        
         conv_manager.add_user_message(user_input)
 
         print("Testing direct invoke...")
