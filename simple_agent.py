@@ -11,6 +11,7 @@ nest_asyncio.apply()
 import os
 import json
 import asyncio
+import sys
 from dotenv import load_dotenv
 import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
@@ -24,6 +25,9 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 # Import our conversation manager
 from conversation_manager import ConversationManager
 
+# Check for debug flag
+DEBUG_MODE = "--debug" in sys.argv
+
 # Custom logging chat service
 class LoggingChatService(OpenAIChatCompletion):
     def __init__(self, *args, **kwargs):
@@ -35,161 +39,74 @@ class LoggingChatService(OpenAIChatCompletion):
         self.__dict__['conversation_manager'] = conv_manager
     
     async def get_chat_message_contents(self, *args, **kwargs):
-        print(f"\n=== CHAT SERVICE CALL ===")
-        print(f"Args count: {len(args)}")
-        print(f"Kwargs keys: {list(kwargs.keys())}")
+        print(f"\n🔄 API CALL INITIATED")
         
-        # Look for chat_history or messages in args
-        for i, arg in enumerate(args):
-            print(f"Arg {i} type: {type(arg)}")
-            if hasattr(arg, 'messages'):
-                print(f"  Messages: {arg.messages}")
-            elif hasattr(arg, 'role'):
-                print(f"  Role: {arg.role}")
-                print(f"  Content: {arg.content}")
-            elif isinstance(arg, (list, tuple)):
-                print(f"  List/Tuple length: {len(arg)}")
-                for j, item in enumerate(arg):
-                    print(f"    Item {j}: {type(item)} - {item}")
+        # Extract essential request info
+        settings = kwargs.get('settings', {})
+        function_behavior = getattr(settings, 'function_choice_behavior', None)
         
-        # Look for messages in kwargs
-        if 'messages' in kwargs:
-            print(f"Kwargs messages: {kwargs['messages']}")
-        if 'chat_history' in kwargs:
-            print(f"Kwargs chat_history: {kwargs['chat_history']}")
-        
-        # Check for settings/execution_settings
-        if 'settings' in kwargs:
-            print(f"Kwargs settings: {kwargs['settings']}")
-            if hasattr(kwargs['settings'], 'function_choice_behavior'):
-                print(f"  Function choice behavior: {kwargs['settings'].function_choice_behavior}")
-        
-        # CRITICAL: Check if tools are actually being sent to OpenAI
+        # Check available functions
+        available_functions = []
         if 'kernel' in kwargs:
             kernel = kwargs['kernel']
             if hasattr(kernel, 'plugins'):
-                print(f"\n🔧 TOOLS BEING SENT TO API:")
-                total_functions = 0
                 for plugin_name, plugin in kernel.plugins.items():
-                    funcs = list(plugin.functions.keys())
-                    total_functions += len(funcs)
-                    print(f"   Plugin '{plugin_name}': {funcs}")
-                print(f"   TOTAL FUNCTIONS: {total_functions}")
+                    if plugin_name != 'chat_plugin':  # Skip chat function
+                        available_functions.extend(plugin.functions.keys())
+        
+        print(f"📋 SETUP: Functions={len(available_functions)} | Behavior={function_behavior.type_.value if function_behavior else 'none'}")
+        print(f"🔧 AVAILABLE: {available_functions}")
+        
+        if DEBUG_MODE:
+            print(f"\n=== DEBUG: DETAILED API CALL INFO ===")
+            print(f"Args count: {len(args)}")
+            print(f"Kwargs keys: {list(kwargs.keys())}")
+            if settings:
+                print(f"Settings: {settings}")
+            if 'kernel' in kwargs:
+                kernel = kwargs['kernel']
+                if hasattr(kernel, 'plugins'):
+                    print(f"Kernel plugins detailed:")
+                    for plugin_name, plugin in kernel.plugins.items():
+                        funcs = list(plugin.functions.keys())
+                        print(f"  Plugin '{plugin_name}': {funcs}")
         
         print("=" * 50)
         
         result = await super().get_chat_message_contents(*args, **kwargs)
         
-        print(f"\n=== CHAT SERVICE RESPONSE ===")
-        print(f"Result type: {type(result)}")
-        if hasattr(result, 'content'):
-            print(f"Result content: {result.content}")
+        # Extract essential response info  
+        chat_messages = result if isinstance(result, list) else (result.value if hasattr(result, 'value') else [])
         
-        # DEBUG: Print the actual result structure
-        print(f"🔍 RESULT DEBUG:")
-        print(f"  Result: {result}")
-        print(f"  Result type: {type(result)}")
-        print(f"  Has 'value' attr: {hasattr(result, 'value')}")
-        if hasattr(result, 'value'):
-            print(f"  Result.value: {result.value}")
-            print(f"  Result.value type: {type(result.value)}")
-        
-        # Check if result is a list directly
-        if isinstance(result, list):
-            print(f"  Result is list with {len(result)} items")
-            for i, item in enumerate(result):
-                print(f"    Item {i}: {type(item)} - {item}")
-        
-        # CRITICAL: Track function call attempts from SK response
-        # Handle both list results and results with .value attribute
-        chat_messages = []
-        if isinstance(result, list):
-            chat_messages = result
-        elif result and hasattr(result, 'value') and result.value:
-            chat_messages = result.value
+        functions_executed = []
+        response_content = ""
         
         for chat_msg in chat_messages:
-                # DEBUG: Print full ChatMessageContent structure
-                print(f"🔍 CHAT MESSAGE DEBUG:")
-                print(f"  Type: {type(chat_msg)}")
-                print(f"  Has metadata: {hasattr(chat_msg, 'metadata')}")
-                if hasattr(chat_msg, 'metadata'):
-                    print(f"  Metadata keys: {list(chat_msg.metadata.keys()) if chat_msg.metadata else 'None'}")
-                
-                # Check inner_content for tool calls
-                print(f"  Has inner_content: {hasattr(chat_msg, 'inner_content')}")
-                if hasattr(chat_msg, 'inner_content') and chat_msg.inner_content:
-                    inner = chat_msg.inner_content
-                    print(f"  Inner content type: {type(inner)}")
-                    if hasattr(inner, 'choices') and inner.choices:
-                        choice = inner.choices[0]
-                        print(f"  Choice message: {choice.message}")
-                        print(f"  Tool calls in choice: {choice.message.tool_calls}")
-                        if choice.message.tool_calls:
-                            print(f"🔍 FOUND TOOL CALLS IN INNER CONTENT!")
-                            for tool_call in choice.message.tool_calls:
-                                print(f"    - {tool_call}")
-                
-                # Check if there are function_call_results anywhere
-                if hasattr(chat_msg, 'items'):
-                    print(f"  Items count: {len(chat_msg.items) if chat_msg.items else 0}")
-                    for item in (chat_msg.items or []):
-                        print(f"    Item type: {type(item)}")
-                        if hasattr(item, 'function_call_result'):
-                            print(f"    Function call result: {item.function_call_result}")
-                
-                # Look for other attributes that might contain function calls
-                relevant_attrs = [attr for attr in dir(chat_msg) if 'function' in attr.lower() or 'tool' in attr.lower()]
-                print(f"  Function/tool related attributes: {relevant_attrs}")
-                
-                if hasattr(chat_msg, 'metadata') and chat_msg.metadata:
-                    # Check for function calls in metadata
-                    if 'function_call' in chat_msg.metadata:
-                        func_call = chat_msg.metadata['function_call']
-                        print(f"🔍 SK FUNCTION CALL DETECTED: {func_call}")
+            if hasattr(chat_msg, 'content'):
+                response_content = chat_msg.content
+            
+            # Check for function executions in items
+            if hasattr(chat_msg, 'items') and chat_msg.items:
+                for item in chat_msg.items:
+                    if hasattr(item, 'function_call_result'):
+                        func_result = item.function_call_result
+                        functions_executed.append({
+                            'name': func_result.function_name,
+                            'result': func_result.result
+                        })
                         
                         if self.__dict__.get('conversation_manager'):
                             self.__dict__['conversation_manager'].add_tool_call_manually(
-                                function_name=func_call.get('name', 'unknown'),
-                                arguments=func_call.get('arguments', {}),
-                                result="[SK ATTEMPTED - waiting for execution]",
-                                success=None  # Unknown at this point
+                                function_name=func_result.function_name,
+                                arguments={},
+                                result=func_result.result,
+                                success=True
                             )
-                    
-                    # Check for tool calls in metadata
-                    if 'tool_calls' in chat_msg.metadata:
-                        tool_calls = chat_msg.metadata['tool_calls']
-                        print(f"🔍 SK TOOL CALLS DETECTED: {len(tool_calls)} calls")
-                        
-                        for tool_call in tool_calls:
-                            print(f"  - Function: {tool_call.get('function', {}).get('name', 'unknown')}")
-                            print(f"  - Arguments: {tool_call.get('function', {}).get('arguments', {})}")
-                            
-                            if self.__dict__.get('conversation_manager'):
-                                self.__dict__['conversation_manager'].add_tool_call_manually(
-                                    function_name=tool_call.get('function', {}).get('name', 'unknown'),
-                                    arguments=tool_call.get('function', {}).get('arguments', {}),
-                                    result="[SK ATTEMPTED - waiting for execution]",
-                                    success=None
-                                )
-                
-                # Check if there are items (function call results)
-                if hasattr(chat_msg, 'items') and chat_msg.items:
-                    print(f"🔍 SK FUNCTION RESULTS: {len(chat_msg.items)} results")
-                    for item in chat_msg.items:
-                        if hasattr(item, 'function_call_result'):
-                            func_result = item.function_call_result
-                            print(f"  - Function: {func_result.function_name}")
-                            print(f"  - Result: {func_result.result}")
-                            
-                            if self.__dict__.get('conversation_manager'):
-                                self.__dict__['conversation_manager'].add_tool_call_manually(
-                                    function_name=func_result.function_name,
-                                    arguments={},  # Arguments not available in result
-                                    result=func_result.result,
-                                    success=True
-                                )
         
+        print(f"✅ API RESPONSE: {len(functions_executed)} functions executed")
+        for func in functions_executed:
+            print(f"   🔧 {func['name']} → {func['result']}")
+        print(f"💬 CONTENT: {response_content}")
         print("=" * 50)
         
         return result
@@ -408,16 +325,17 @@ async def main():
     for func_name, func in data_plugin.functions.items():
         print(f"   {func_name}: {func.description} | Params: {[p.name for p in func.parameters]}")
     
-    print("\n=== ENHANCED PARAMETER DEBUG ===")
-    for func_name, func in data_plugin.functions.items():
-        print(f"Function: {func_name}")
-        print(f"  - Return type: {func.return_parameter}")
-        for param in func.parameters:
-            print(f"  Parameter: {param.name}")
-            print(f"    - Direct description: {param.description}")
-            if hasattr(param, 'default_value') and param.default_value:
-                if hasattr(param.default_value, 'description'):
-                    print(f"    - InputVariable description: {param.default_value.description}")
+    if DEBUG_MODE:
+        print("\n=== ENHANCED PARAMETER DEBUG ===")
+        for func_name, func in data_plugin.functions.items():
+            print(f"Function: {func_name}")
+            print(f"  - Return type: {func.return_parameter}")
+            for param in func.parameters:
+                print(f"  Parameter: {param.name}")
+                print(f"    - Direct description: {param.description}")
+                if hasattr(param, 'default_value') and param.default_value:
+                    if hasattr(param.default_value, 'description'):
+                        print(f"    - InputVariable description: {param.default_value.description}")
     
     # Load prompt from file and add current data status
     with open("agents/prompts/prompt.txt", 'r') as f:
@@ -440,9 +358,8 @@ async def main():
     print("\n=== SK KERNEL INSPECTION ===")
     print(f"Kernel plugins: {list(kernel.plugins.keys())}")
     print(f"Kernel services: {list(kernel.services.keys())}")
+    print("\n=== SK KERNEL INSPECTION ===")
     
-    chat_service = kernel.get_service("openai")
-    print(f"Chat service type: {type(chat_service)}")
     
     for user_input in ["I was born in 1996"]:
         print(f"\nUser: {user_input}")
@@ -485,7 +402,7 @@ async def main():
         
         # Extract token usage from metadata
         usage = chat_message.metadata.get('usage')
-        if usage:
+        if DEBUG_MODE and usage:
             print(f"📊 TOKEN USAGE:")
             print(f"   INPUT  - Prompt tokens: {usage.prompt_tokens}")
             print(f"   OUTPUT - Completion tokens: {usage.completion_tokens}")
