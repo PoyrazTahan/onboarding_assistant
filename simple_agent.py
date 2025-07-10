@@ -5,8 +5,6 @@ Goal: Update data.json through conversation until all fields are filled
 """
 #%%
 import nest_asyncio
-import asyncio
-import aiohttp
 nest_asyncio.apply()
 
 #%%
