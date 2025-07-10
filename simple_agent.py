@@ -99,9 +99,14 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    # Load base prompt from file
-    with open("prompts/prompt.txt", 'r') as f:
-        base_prompt = f.read()
+    # Load base prompt from file - using reasoning-based prompt
+    try:
+        with open("prompts/reasoning_prompt.txt", 'r') as f:
+            base_prompt = f.read()
+    except FileNotFoundError:
+        # Fallback to original prompt if new one doesn't exist
+        with open("prompts/prompt.txt", 'r') as f:
+            base_prompt = f.read()
     
     # Initial setup - check if greeting is needed
     data = data_manager.load_data()
