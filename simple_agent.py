@@ -98,7 +98,7 @@ async def main():
     )
     
     # Load prompt from file and add current data status
-    with open("agents/prompts/prompt.txt", 'r') as f:
+    with open("prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
     
     # Get current data status and add to prompt
