@@ -41,18 +41,21 @@ class LoggingChatService(OpenAIChatCompletion):
         print(f"🔧 AVAILABLE: {available_functions}")
         
         if DEBUG_MODE:
-            print(f"\n=== DEBUG: DETAILED API CALL INFO ===")
-            print(f"Args count: {len(args)}")
-            print(f"Kwargs keys: {list(kwargs.keys())}")
-            if settings:
-                print(f"Settings: {settings}")
+            print(f"\n=== DEBUG: API CALL HIGHLIGHTS ===")
+            if settings and hasattr(settings, 'function_choice_behavior'):
+                behavior = settings.function_choice_behavior
+                print(f"Function Choice: {behavior.type_.value} (max attempts: {behavior.maximum_auto_invoke_attempts})")
+            
             if 'kernel' in kwargs:
                 kernel = kwargs['kernel']
                 if hasattr(kernel, 'plugins'):
-                    print(f"Kernel plugins detailed:")
+                    data_funcs = []
                     for plugin_name, plugin in kernel.plugins.items():
-                        funcs = list(plugin.functions.keys())
-                        print(f"  Plugin '{plugin_name}': {funcs}")
+                        if plugin_name == 'data_plugin':
+                            data_funcs = list(plugin.functions.keys())
+                    print(f"Available Functions: {data_funcs}")
+            
+            print(f"Request Type: {list(kwargs.keys())}")
         
         print("=" * 50)
         

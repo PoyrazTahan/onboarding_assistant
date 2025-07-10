@@ -140,6 +140,16 @@ class DataManager:
         print(f"   ✅ {result}")
         print(f"   📊 Data after update: {data}")
         print()
+        
+        # Update function call result in conversation manager
+        if self.conversation_manager:
+            self.conversation_manager.add_tool_call_manually(
+                function_name="update_data",
+                arguments={"field": field, "value": value},
+                result=result,
+                success=True
+            )
+        
         return result
     
     @kernel_function(
@@ -182,4 +192,14 @@ class DataManager:
         
         print(f"   📝 Result: {result}")
         print()
+        
+        # Update function call result in conversation manager
+        if self.conversation_manager:
+            self.conversation_manager.add_tool_call_manually(
+                function_name="ask_question",
+                arguments={"field": field, "message": message},
+                result=result,
+                success=True
+            )
+        
         return result

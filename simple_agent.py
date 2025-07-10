@@ -53,7 +53,12 @@ def debug_function_registration(settings, data_plugin, kernel):
     print("\n=== SK KERNEL INSPECTION ===")
     print(f"Kernel plugins: {list(kernel.plugins.keys())}")
     print(f"Kernel services: {list(kernel.services.keys())}")
-    print("\n=== SK KERNEL INSPECTION ===")
+    
+    # Show registered functions
+    print(f"Registered functions:")
+    for plugin_name, plugin in kernel.plugins.items():
+        funcs = list(plugin.functions.keys())
+        print(f"  {plugin_name}: {funcs}")
 
 async def main():
     """Main function to test our simple agent"""
@@ -114,8 +119,6 @@ async def main():
         debug_function_registration(settings, data_plugin, kernel)
     
     for user_input in ["I am 85"]:
-        print(f"\nUser: {user_input}")
-        
         # Track user message
         conv_manager.add_user_message(user_input)
 
