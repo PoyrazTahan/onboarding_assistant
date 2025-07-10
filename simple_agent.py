@@ -21,8 +21,19 @@ from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoic
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatPromptExecutionSettings
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
+# Import our conversation manager
+from conversation_manager import ConversationManager
+
 # Custom logging chat service
 class LoggingChatService(OpenAIChatCompletion):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use __dict__ to bypass Pydantic validation
+        self.__dict__['conversation_manager'] = None
+    
+    def set_conversation_manager(self, conv_manager):
+        self.__dict__['conversation_manager'] = conv_manager
+    
     async def get_chat_message_contents(self, *args, **kwargs):
         print(f"\n=== CHAT SERVICE CALL ===")
         print(f"Args count: {len(args)}")
@@ -73,6 +84,112 @@ class LoggingChatService(OpenAIChatCompletion):
         print(f"Result type: {type(result)}")
         if hasattr(result, 'content'):
             print(f"Result content: {result.content}")
+        
+        # DEBUG: Print the actual result structure
+        print(f"🔍 RESULT DEBUG:")
+        print(f"  Result: {result}")
+        print(f"  Result type: {type(result)}")
+        print(f"  Has 'value' attr: {hasattr(result, 'value')}")
+        if hasattr(result, 'value'):
+            print(f"  Result.value: {result.value}")
+            print(f"  Result.value type: {type(result.value)}")
+        
+        # Check if result is a list directly
+        if isinstance(result, list):
+            print(f"  Result is list with {len(result)} items")
+            for i, item in enumerate(result):
+                print(f"    Item {i}: {type(item)} - {item}")
+        
+        # CRITICAL: Track function call attempts from SK response
+        # Handle both list results and results with .value attribute
+        chat_messages = []
+        if isinstance(result, list):
+            chat_messages = result
+        elif result and hasattr(result, 'value') and result.value:
+            chat_messages = result.value
+        
+        for chat_msg in chat_messages:
+                # DEBUG: Print full ChatMessageContent structure
+                print(f"🔍 CHAT MESSAGE DEBUG:")
+                print(f"  Type: {type(chat_msg)}")
+                print(f"  Has metadata: {hasattr(chat_msg, 'metadata')}")
+                if hasattr(chat_msg, 'metadata'):
+                    print(f"  Metadata keys: {list(chat_msg.metadata.keys()) if chat_msg.metadata else 'None'}")
+                
+                # Check inner_content for tool calls
+                print(f"  Has inner_content: {hasattr(chat_msg, 'inner_content')}")
+                if hasattr(chat_msg, 'inner_content') and chat_msg.inner_content:
+                    inner = chat_msg.inner_content
+                    print(f"  Inner content type: {type(inner)}")
+                    if hasattr(inner, 'choices') and inner.choices:
+                        choice = inner.choices[0]
+                        print(f"  Choice message: {choice.message}")
+                        print(f"  Tool calls in choice: {choice.message.tool_calls}")
+                        if choice.message.tool_calls:
+                            print(f"🔍 FOUND TOOL CALLS IN INNER CONTENT!")
+                            for tool_call in choice.message.tool_calls:
+                                print(f"    - {tool_call}")
+                
+                # Check if there are function_call_results anywhere
+                if hasattr(chat_msg, 'items'):
+                    print(f"  Items count: {len(chat_msg.items) if chat_msg.items else 0}")
+                    for item in (chat_msg.items or []):
+                        print(f"    Item type: {type(item)}")
+                        if hasattr(item, 'function_call_result'):
+                            print(f"    Function call result: {item.function_call_result}")
+                
+                # Look for other attributes that might contain function calls
+                relevant_attrs = [attr for attr in dir(chat_msg) if 'function' in attr.lower() or 'tool' in attr.lower()]
+                print(f"  Function/tool related attributes: {relevant_attrs}")
+                
+                if hasattr(chat_msg, 'metadata') and chat_msg.metadata:
+                    # Check for function calls in metadata
+                    if 'function_call' in chat_msg.metadata:
+                        func_call = chat_msg.metadata['function_call']
+                        print(f"🔍 SK FUNCTION CALL DETECTED: {func_call}")
+                        
+                        if self.__dict__.get('conversation_manager'):
+                            self.__dict__['conversation_manager'].add_tool_call_manually(
+                                function_name=func_call.get('name', 'unknown'),
+                                arguments=func_call.get('arguments', {}),
+                                result="[SK ATTEMPTED - waiting for execution]",
+                                success=None  # Unknown at this point
+                            )
+                    
+                    # Check for tool calls in metadata
+                    if 'tool_calls' in chat_msg.metadata:
+                        tool_calls = chat_msg.metadata['tool_calls']
+                        print(f"🔍 SK TOOL CALLS DETECTED: {len(tool_calls)} calls")
+                        
+                        for tool_call in tool_calls:
+                            print(f"  - Function: {tool_call.get('function', {}).get('name', 'unknown')}")
+                            print(f"  - Arguments: {tool_call.get('function', {}).get('arguments', {})}")
+                            
+                            if self.__dict__.get('conversation_manager'):
+                                self.__dict__['conversation_manager'].add_tool_call_manually(
+                                    function_name=tool_call.get('function', {}).get('name', 'unknown'),
+                                    arguments=tool_call.get('function', {}).get('arguments', {}),
+                                    result="[SK ATTEMPTED - waiting for execution]",
+                                    success=None
+                                )
+                
+                # Check if there are items (function call results)
+                if hasattr(chat_msg, 'items') and chat_msg.items:
+                    print(f"🔍 SK FUNCTION RESULTS: {len(chat_msg.items)} results")
+                    for item in chat_msg.items:
+                        if hasattr(item, 'function_call_result'):
+                            func_result = item.function_call_result
+                            print(f"  - Function: {func_result.function_name}")
+                            print(f"  - Result: {func_result.result}")
+                            
+                            if self.__dict__.get('conversation_manager'):
+                                self.__dict__['conversation_manager'].add_tool_call_manually(
+                                    function_name=func_result.function_name,
+                                    arguments={},  # Arguments not available in result
+                                    result=func_result.result,
+                                    success=True
+                                )
+        
         print("=" * 50)
         
         return result
@@ -83,8 +200,9 @@ load_dotenv()
 class DataManager:
     """Manages the simple data.json file"""
     
-    def __init__(self, data_file="data/data.json"):
+    def __init__(self, data_file="data/data.json", conversation_manager=None):
         self.data_file = data_file
+        self.conversation_manager = conversation_manager
         
     def load_data(self):
         """Load data from JSON file"""
@@ -106,11 +224,10 @@ class DataManager:
         
         status_report = []
         
-        # === EXISTING DATA SECTION ===
-        status_report.append("=== EXISTING DATA ===")
+        # === RECORDED DATA SECTION ===
+        status_report.append("=== RECORDED USER DATA ===")
         if not filled:
-            status_report.append("• No information available yet - this could be a new user")
-            status_report.append("• Start with a friendly greeting and ask for basic information")
+            status_report.append("• No data recorded yet")
         else:
             for field, value in filled.items():
                 if field == "age":
@@ -120,31 +237,38 @@ class DataManager:
                 elif field == "height":
                     status_report.append(f"- Height: {value}")
         
-        # === MISSING DATA SECTION ===
-        status_report.append("\n=== MISSING DATA ===")
+        # === MISSING FIELDS SECTION ===
+        status_report.append("\n=== MISSING FIELDS ===")
         if not missing:
-            status_report.append("• All data collected! No further information needed.")
-            status_report.append("• You can summarize what you've learned and end the conversation.")
+            status_report.append("• All fields complete!")
         else:
             for field in missing:
                 if field == "age":
-                    status_report.append("• Age: Ask how old they are (needed for health recommendations)")
+                    status_report.append("• Age: null")
                 elif field == "weight":
-                    status_report.append("• Weight: Ask their current weight in kg (for BMI calculation)")
+                    status_report.append("• Weight: null")
                 elif field == "height":
-                    status_report.append("• Height: Ask their height in cm (for BMI calculation)")
+                    status_report.append("• Height: null")
+        
+        # === NEXT ACTION GUIDANCE ===
+        status_report.append("\n=== WORKFLOW GUIDANCE ===")
+        if missing:
+            next_field = missing[0]  # First missing field
+            status_report.append(f"• NEXT ACTION: Ask question for '{next_field}' field")
+        else:
+            status_report.append("• NEXT ACTION: All data collected, end conversation")
         
         return "\n".join(status_report)
     
     @kernel_function(
         name="update_data",
-        description="Update a specific field in data.json"
+        description="Update a specific field ONLY when you have actual user-provided information. Do NOT call with empty values or duplicate existing data."
     )
     def update_data(
         self,
         field: str = InputVariable(
             name="field",
-            description="Field name to update (must be: age, weight, or height)",
+            description="Field name to update (must be: age, weight, or height) field type is case insensetive",
             is_required=True
         ),
         value: str = InputVariable(
@@ -153,24 +277,51 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        print(f"🚀 Function called: update_data(field='{field}', value='{value}')")
+        # DETAILED TRACKING: Add timestamp and call counter
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        print(f"🚀 [{timestamp}] Function called: update_data(field='{field}', value='{value}')")
         
         data = self.load_data()
+        print(f"   📊 Current data before update: {data}")
         
         if field not in data:
-            return f"Error: Field '{field}' not found. Available fields: {list(data.keys())}"
+            error_msg = f"Error: Field '{field}' not found. Available fields: {list(data.keys())}"
+            print(f"   ❌ {error_msg}")
+            return error_msg
+        
+        print(f"   🔄 Attempting to update '{field}' from '{data[field]}' to '{value}'")
+        
+        # VALIDATION: Prevent empty/meaningless updates
+        if not value or value.strip() == '':
+            error_msg = f"Cannot update {field} with empty value. Only update when you have actual user-provided information."
+            print(f"   ❌ {error_msg}")
+            return error_msg
+        
+        # VALIDATION: Prevent unnecessary updates of existing data
+        current_value = data[field]
+        if current_value is not None and str(current_value) == str(value):
+            error_msg = f"Field {field} already has value '{current_value}'. No update needed unless user provides new information."
+            print(f"   ⚠️ {error_msg}")
+            return error_msg
         
         # Convert to appropriate type
         if field in ["age", "height"]:
             try:
                 data[field] = int(value)
             except ValueError:
-                return f"Error: {field} must be a number, got '{value}'"
+                error_msg = f"Error: {field} must be a number, got '{value}'"
+                print(f"   ❌ {error_msg}")
+                return error_msg
         else:
             data[field] = value
         
         self.save_data(data)
-        return f"Updated {field} to {data[field]}"
+        result = f"Updated {field} to {data[field]}"
+        print(f"   ✅ {result}")
+        print(f"   📊 Data after update: {data}")
+        print()
+        return result
     
     @kernel_function(
         name="ask_question",
@@ -180,7 +331,7 @@ class DataManager:
         self,
         field: str = InputVariable(
             name="field",
-            description="Field name to ask about (age, weight, or height)",
+            description="Field name to ask about (age, weight, or height), field type is case insensetive",
             is_required=True
         ),
         message: str = InputVariable(
@@ -189,13 +340,28 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        print(f"🚀 Function called: ask_question(field='{field}', message='{message}')")
-        return f"[ASKING] {field}: {message}"
+        # DETAILED TRACKING: Add timestamp
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        print(f"💬 [{timestamp}] Function called: ask_question(field='{field}', message='{message}')")
+        
+        data = self.load_data()
+        print(f"   📊 Current data: {data}")
+        print(f"   🤔 Asking about field '{field}' which currently has value: {data.get(field, 'NOT_FOUND')}")
+        
+        result = f"[ASKING] {field}: {message}"
+        print(f"   📝 Result: {result}")
+        print()
+        return result
 
 async def main():
     """Main function to test our simple agent"""
     
     print("🧪 Testing Simple Data Collection Agent...")
+    
+    # Initialize conversation manager
+    conv_manager = ConversationManager()
+    print(f"📝 Started conversation session: {conv_manager.session_id}")
     
     # Get API key
     api_key = os.getenv("OPENAI_API_KEY")
@@ -211,8 +377,11 @@ async def main():
     )
     kernel.add_service(chat_service)
     
-    # Add data manager plugin
-    data_manager = DataManager()
+    # Connect chat service to conversation manager
+    chat_service.set_conversation_manager(conv_manager)
+    
+    # Add data manager plugin with conversation manager
+    data_manager = DataManager(conversation_manager=conv_manager)
     data_plugin = kernel.add_plugin(
         plugin=data_manager,
         plugin_name="data_plugin"
@@ -277,6 +446,9 @@ async def main():
     
     for user_input in ["I was born in 1996"]:
         print(f"\nUser: {user_input}")
+        
+        # Track user message
+        conv_manager.add_user_message(user_input)
 
         print("Testing direct invoke...")
         # Try using KernelArguments to pass settings
@@ -301,6 +473,16 @@ async def main():
         chat_message = response.value[0]  # First (and only) message
         clean_response = chat_message.content
         
+        # Track assistant message with SK response for tool extraction
+        conv_manager.add_assistant_message(
+            content=clean_response,
+            sk_response=response,
+            metadata={
+                'model': 'gpt-4o-mini',
+                'function_choice_behavior': str(settings.function_choice_behavior.type_.value)
+            }
+        )
+        
         # Extract token usage from metadata
         usage = chat_message.metadata.get('usage')
         if usage:
@@ -317,10 +499,20 @@ async def main():
 
         # Check if functions were called
         print(f"Data after invoke: {data_manager.load_data()}")
+        
+        # Print conversation summary
+        print(f"\n=== CONVERSATION TRACKING ===")
+        summary = conv_manager.get_conversation_summary()
+        print(f"Messages: {summary['user_messages']} user, {summary['assistant_messages']} assistant")
+        print(f"Tool calls: {summary['tool_calls']}")
+        print(f"Functions used: {summary['functions_used']}")
+        
+        # Print detailed conversation
+        conv_manager.print_conversation()
 
     
 #%%
-# if __name__ == "__main__":
-#     asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
 
 # %%
