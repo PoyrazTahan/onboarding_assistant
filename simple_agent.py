@@ -99,18 +99,12 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    # Load prompt from file
+    # Load base prompt from file
     with open("prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
     
-    # Get current data status
+    # Initial setup - check if greeting is needed
     data = data_manager.load_data()
-    current_status = data_manager.get_data_status()
-    
-    # Update session's data state
-    session.data_state = data.copy()
-    
-    # Determine if we need initial greeting
     has_data = any(value is not None for value in data.values())
     
     if has_data:
@@ -118,36 +112,46 @@ async def main():
     else:
         initial_greeting = "Hey there! I am Nora do you have couple of minutes for me to ask you couple of questions?"
     
-    # Get conversation history
-    conversation_history = session.get_conversation_history()
-    
     # Check if this is first interaction (no blocks yet)
     if not session.blocks:
         # Add programmatic greeting block
         session.add_programmatic_block(initial_greeting, block_type="greeting")
-        # Update conversation history after adding greeting
-        conversation_history = session.get_conversation_history()
-    
-    # Build comprehensive prompt
-    prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
-    
-    print(f"📝 PROMPT LENGTH: {len(prompt)} characters")
-    print(f"📊 DATA STATUS: {len([k for k, v in data.items() if v is not None])}/3 fields filled")
-     
-    # Create chat function
-    chat_function = kernel.add_function(
-        function_name="data_chat",
-        plugin_name="chat_plugin",
-        prompt=prompt
-    )
+        print(f"\n🤖 Assistant: {initial_greeting}")
 
     if DEBUG_MODE:
         debug_function_registration(settings, data_plugin, kernel)
-        print(f"\n=== DEBUG: CONVERSATION HISTORY ===")
-        print(conversation_history)
-        print("=" * 40)
     
-    for user_input in ["Hello, I need help filling out my data."]:
+    # Conversation loop - support multiple interactions
+    test_inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"]
+    
+    for i, user_input in enumerate(test_inputs):
+        print(f"\n👤 User: {user_input}")
+        
+        # Reload data to get latest state
+        data = data_manager.load_data()
+        current_status = data_manager.get_data_status()
+        
+        # Update session's data state
+        session.data_state = data.copy()
+        
+        # Get updated conversation history
+        conversation_history = session.get_conversation_history()
+        
+        # Build prompt with current state
+        prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
+        
+        if DEBUG_MODE:
+            print(f"\n📝 PROMPT LENGTH: {len(prompt)} characters")
+            print(f"📊 DATA STATUS: {len([k for k, v in data.items() if v is not None])}/3 fields filled")
+        
+        # Create chat function with updated prompt
+        chat_function = kernel.add_function(
+            function_name=f"data_chat_{i}",  # Make function name unique for each iteration
+            plugin_name="chat_plugin",
+            prompt=prompt
+        )
+        
+        # Process user input
         # Get available functions for context
         available_functions = []
         for plugin_name, plugin in kernel.plugins.items():
@@ -167,8 +171,10 @@ async def main():
         data_manager.current_block_id = block_id
         chat_service.__dict__['current_block_id'] = block_id
         
-        print(f"\n\nFULL PROMPT:\n======================")
-        print(prompt)
+        if DEBUG_MODE:
+            print(f"\n\nFULL PROMPT:\n======================")
+            print(prompt)
+            print("======================\n")
         
         # Try using KernelArguments to pass settings
         arguments = KernelArguments(
@@ -184,6 +190,7 @@ async def main():
             print(f"❌ Invoke Error: {e}")
             import traceback
             traceback.print_exc()
+            continue
         
         # Get the actual response content
         chat_message = response.value[0]  # First (and only) message
@@ -192,24 +199,29 @@ async def main():
         # Complete the AI block
         session.complete_ai_block(block_id, str(response.value), clean_response)
         
-        # Extract clean response and metrics
-        print(f"\n=== API CALL SUMMARY ===")
-        # Extract token usage from metadata
-        usage = chat_message.metadata.get('usage')
-        print(f"📊 TOKEN USAGE:")
-        print(f"   INPUT  - Prompt tokens: {usage.prompt_tokens}")
-        print(f"   OUTPUT - Completion tokens: {usage.completion_tokens}")
-        print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
-        print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
+        # Print assistant response
+        print(f"🤖 Assistant: {clean_response}")
         
-        # Print session flow
-        session.print_session_flow()
-        
-        # Optional: save session for debugging
         if DEBUG_MODE:
-            os.makedirs("data/sessions", exist_ok=True)
-            session.save_to_file()
-            print(f"\n💾 Session saved to: data/sessions/{session.id}.json")
+            # Extract token usage from metadata
+            usage = chat_message.metadata.get('usage')
+            print(f"\n📊 TOKEN USAGE:")
+            print(f"   INPUT: {usage.prompt_tokens} | OUTPUT: {usage.completion_tokens} | TOTAL: {usage.prompt_tokens + usage.completion_tokens}")
+        
+        # Stop if all data is collected
+        data = data_manager.load_data()
+        if all(value is not None for value in data.values()):
+            print("\n✅ All data collected! Conversation complete.")
+            break
+        
+    
+    # Print final session flow
+    session.print_session_flow()
+    
+    # Save session for debugging
+    os.makedirs("data/sessions", exist_ok=True)
+    session.save_to_file()
+    print(f"\n💾 Session saved to: data/sessions/{session.id}.json")
 
     
 #%%

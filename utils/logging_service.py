@@ -39,11 +39,20 @@ class LoggingService(OpenAIChatCompletion):
                             r = item.function_call_result
                             print(f"   🔧 {r.function_name} → {r.result}")
                             
+                            # Try to extract arguments from the function call
+                            args = {}
+                            if hasattr(item, 'function_call') and hasattr(item.function_call, 'arguments'):
+                                try:
+                                    import json
+                                    args = json.loads(item.function_call.arguments)
+                                except:
+                                    pass
+                            
                             # Add action to current block
                             self.__dict__['session'].add_action_to_block(
                                 self.__dict__['current_block_id'],
                                 r.function_name,
-                                {},  # We don't have args here
+                                args,
                                 r.result
                             )
         

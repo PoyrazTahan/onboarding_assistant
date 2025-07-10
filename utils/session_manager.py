@@ -85,27 +85,28 @@ class Session:
         
         for block in recent_blocks:
             if block['type'] == 'programmatic':
-                # Include programmatic messages in history
+                # Include programmatic messages as Assistant messages
                 lines.append(f"Assistant: {block['content']}")
             elif block['type'] == 'ai_interaction':
                 # User input
                 lines.append(f"User: {block['user_input']}")
                 
-                # Assistant response with actions
-                if block['response']['final_message']:
-                    lines.append(f"Assistant: {block['response']['final_message']}")
-                    
-                    # Include actions taken
+                # Include actions taken inline with response
+                if block['response']['actions']:
+                    lines.append("Actions taken:")
                     for action in block['response']['actions']:
                         if action['function'] == 'update_data':
                             field = action['arguments'].get('field')
                             value = action['arguments'].get('value')
-                            lines.append(f"Actions: updated {field} = {value}")
+                            lines.append(f"  - Called update_data(field='{field}', value='{value}') → {action['result']}")
                         elif action['function'] == 'ask_question':
                             field = action['arguments'].get('field')
-                            lines.append(f"Actions: asked about {field}")
-            
-            lines.append("")  # Empty line between blocks
+                            message = action['arguments'].get('message')
+                            lines.append(f"  - Called ask_question(field='{field}', message='{message}') → Success")
+                
+                # Assistant response after actions
+                if block['response']['final_message']:
+                    lines.append(f"Assistant: {block['response']['final_message']}")
             
         return "\n".join(lines).strip()
         
