@@ -14,9 +14,6 @@ import asyncio
 import sys
 from dotenv import load_dotenv
 import semantic_kernel as sk
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
-from semantic_kernel.functions import kernel_function
-from semantic_kernel.prompt_template.input_variable import InputVariable
 
 from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatPromptExecutionSettings
@@ -32,6 +29,31 @@ DEBUG_MODE = "--debug" in sys.argv
 
 # Load environment
 load_dotenv()
+
+def debug_function_registration(settings, data_plugin, kernel):
+    print(f"\n📋 SETTINGS: Function={settings.function_choice_behavior.type_.value.upper()}(max:{settings.function_choice_behavior.maximum_auto_invoke_attempts}) | Temp={settings.temperature or 'def'} | MaxTok={settings.max_tokens or '∞'} | Stream={settings.stream}")
+    print(f"✅ Plugin added with functions: {[f.name for f in data_plugin.functions.values()]}")
+    
+    # Debug function registration details
+    print(f"\n🔧 FUNCTION REGISTRATION:")
+    for func_name, func in data_plugin.functions.items():
+        print(f"   {func_name}: {func.description} | Params: {[p.name for p in func.parameters]}")
+    print("\n=== ENHANCED PARAMETER DEBUG ===")
+    for func_name, func in data_plugin.functions.items():
+        print(f"Function: {func_name}")
+        print(f"  - Return type: {func.return_parameter}")
+        for param in func.parameters:
+            print(f"  Parameter: {param.name}")
+            print(f"    - Direct description: {param.description}")
+            if hasattr(param, 'default_value') and param.default_value:
+                if hasattr(param.default_value, 'description'):
+                    print(f"    - InputVariable description: {param.default_value.description}")
+    
+    
+    print("\n=== SK KERNEL INSPECTION ===")
+    print(f"Kernel plugins: {list(kernel.plugins.keys())}")
+    print(f"Kernel services: {list(kernel.services.keys())}")
+    print("\n=== SK KERNEL INSPECTION ===")
 
 async def main():
     """Main function to test our simple agent"""
@@ -70,26 +92,6 @@ async def main():
         function_choice_behavior=FunctionChoiceBehavior.Auto()
     )
     
-    print(f"\n📋 SETTINGS: Function={settings.function_choice_behavior.type_.value.upper()}(max:{settings.function_choice_behavior.maximum_auto_invoke_attempts}) | Temp={settings.temperature or 'def'} | MaxTok={settings.max_tokens or '∞'} | Stream={settings.stream}")
-    print(f"✅ Plugin added with functions: {[f.name for f in data_plugin.functions.values()]}")
-    
-    # Debug function registration details
-    print(f"\n🔧 FUNCTION REGISTRATION:")
-    for func_name, func in data_plugin.functions.items():
-        print(f"   {func_name}: {func.description} | Params: {[p.name for p in func.parameters]}")
-    
-    if DEBUG_MODE:
-        print("\n=== ENHANCED PARAMETER DEBUG ===")
-        for func_name, func in data_plugin.functions.items():
-            print(f"Function: {func_name}")
-            print(f"  - Return type: {func.return_parameter}")
-            for param in func.parameters:
-                print(f"  Parameter: {param.name}")
-                print(f"    - Direct description: {param.description}")
-                if hasattr(param, 'default_value') and param.default_value:
-                    if hasattr(param.default_value, 'description'):
-                        print(f"    - InputVariable description: {param.default_value.description}")
-    
     # Load prompt from file and add current data status
     with open("agents/prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
@@ -107,12 +109,9 @@ async def main():
         plugin_name="chat_plugin",
         prompt=prompt
     )
-    
-    print("\n=== SK KERNEL INSPECTION ===")
-    print(f"Kernel plugins: {list(kernel.plugins.keys())}")
-    print(f"Kernel services: {list(kernel.services.keys())}")
-    print("\n=== SK KERNEL INSPECTION ===")
-    
+
+    if DEBUG_MODE:
+        debug_function_registration(settings, data_plugin, kernel)
     
     for user_input in ["I am 85"]:
         print(f"\nUser: {user_input}")
@@ -135,9 +134,6 @@ async def main():
             print(f"❌ Invoke Error: {e}")
             import traceback
             traceback.print_exc()
-            
-        # Extract clean response and metrics
-        print(f"\n=== API CALL SUMMARY ===")
         
         # Get the actual response content
         chat_message = response.value[0]  # First (and only) message
@@ -153,26 +149,19 @@ async def main():
             }
         )
         
+        # Extract clean response and metrics
+        print(f"\n=== API CALL SUMMARY ===")
         # Extract token usage from metadata
         usage = chat_message.metadata.get('usage')
-        if DEBUG_MODE and usage:
-            print(f"📊 TOKEN USAGE:")
-            print(f"   INPUT  - Prompt tokens: {usage.prompt_tokens}")
-            print(f"   OUTPUT - Completion tokens: {usage.completion_tokens}")
-            print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
-            print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
-            # print(f"   TOTAL: {usage.total_tokens}")
-        
-        print(f"\n💬 ASSISTANT RESPONSE:")
-        print(clean_response)
-        print("=" * 50)
-
-        # Check if functions were called
-        print(f"Data after invoke: {data_manager.load_data()}")
+        print(f"📊 TOKEN USAGE:")
+        print(f"   INPUT  - Prompt tokens: {usage.prompt_tokens}")
+        print(f"   OUTPUT - Completion tokens: {usage.completion_tokens}")
+        print(f"          - Reasoning tokens: {usage.completion_tokens_details.reasoning_tokens}")
+        print(f"          - Accepted prediction tokens: {usage.completion_tokens_details.accepted_prediction_tokens}")
         
         # Print conversation summary
-        print(f"\n=== CONVERSATION TRACKING ===")
         summary = conv_manager.get_conversation_summary()
+        print(f"\n=== CONVERSATION TRACKING ===")
         print(f"Messages: {summary['user_messages']} user, {summary['assistant_messages']} assistant")
         print(f"Tool calls: {summary['tool_calls']}")
         print(f"Functions used: {summary['functions_used']}")
