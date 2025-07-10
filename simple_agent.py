@@ -67,7 +67,7 @@ load_dotenv()
 class DataManager:
     """Manages the simple data.json file"""
     
-    def __init__(self, data_file="data.json"):
+    def __init__(self, data_file="data/data.json"):
         self.data_file = data_file
         
     def load_data(self):
@@ -229,7 +229,7 @@ async def main():
                     print(f"    - InputVariable description: {param.default_value.description}")
     
     # Load prompt from file and add current data status
-    with open("prompt.txt", 'r') as f:
+    with open("agents/prompts/prompt.txt", 'r') as f:
         base_prompt = f.read()
     
     # Get current data status and add to prompt
