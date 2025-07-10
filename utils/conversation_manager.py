@@ -231,6 +231,50 @@ class ConversationManager:
             'functions_used': list(set(tc['function_name'] for tc in tool_calls))
         }
     
+    def get_conversation_turns(self) -> List[Dict[str, Any]]:
+        """Get conversation organized by turns (user -> assistant actions)"""
+        turns = []
+        current_turn = None
+        
+        for msg in self.messages:
+            if msg.role == MessageType.USER.value:
+                # Start new turn
+                current_turn = {
+                    'user_message': msg.content,
+                    'user_timestamp': msg.timestamp,
+                    'assistant_actions': []
+                }
+                turns.append(current_turn)
+            
+            elif msg.role == MessageType.ASSISTANT.value and current_turn:
+                # Add assistant response to current turn
+                action = {
+                    'type': 'response',
+                    'content': msg.content,
+                    'timestamp': msg.timestamp
+                }
+                current_turn['assistant_actions'].append(action)
+            
+            elif msg.role == 'tool_execution' and current_turn:
+                # Add tool calls to current turn
+                if msg.tool_calls:
+                    for tool_call in msg.tool_calls:
+                        result = None
+                        if msg.tool_results:
+                            result = next((r for r in msg.tool_results 
+                                         if r.call_id == tool_call.call_id), None)
+                        
+                        action = {
+                            'type': 'tool_call',
+                            'function_name': tool_call.function_name,
+                            'arguments': tool_call.arguments,
+                            'result': result.result if result else None,
+                            'timestamp': msg.timestamp
+                        }
+                        current_turn['assistant_actions'].append(action)
+        
+        return turns
+    
     # === EXPORT METHODS (Future extensibility) ===
     
     def to_dict(self) -> Dict[str, Any]:
@@ -276,4 +320,45 @@ class ConversationManager:
         summary = self.get_conversation_summary()
         for key, value in summary.items():
             print(f"{key}: {value}")
+        print("=" * 50)
+    
+    def print_conversation_turns(self):
+        """Print conversation organized by turns showing all assistant actions grouped"""
+        print(f"\n🔄 CONVERSATION FLOW ({self.session_id})")
+        print("=" * 50)
+        
+        turns = self.get_conversation_turns()
+        
+        for i, turn in enumerate(turns, 1):
+            user_time = turn['user_timestamp'].split('T')[1][:8]
+            
+            print(f"\n📍 TURN {i}")
+            print(f"   👤 [{user_time}] USER: {turn['user_message']}")
+            
+            if turn['assistant_actions']:
+                print(f"   🤖 ASSISTANT:")
+                # Sort actions by timestamp to show in correct order
+                actions = sorted(turn['assistant_actions'], key=lambda x: x['timestamp'])
+                
+                for j, action in enumerate(actions, 1):
+                    action_time = action['timestamp'].split('T')[1][:8]
+                    
+                    if action['type'] == 'tool_call':
+                        # Format arguments nicely - truncate long values
+                        formatted_args = []
+                        for k, v in action['arguments'].items():
+                            v_str = str(v)
+                            if len(v_str) > 40:
+                                v_str = v_str[:37] + "..."
+                            formatted_args.append(f"{k}='{v_str}'")
+                        args_str = ", ".join(formatted_args)
+                        print(f"      🔧 [{action_time}] {action['function_name']}({args_str})")
+                        if action['result']:
+                            print(f"         → {action['result']}")
+                    
+                    elif action['type'] == 'response':
+                        print(f"      💬 [{action_time}] \"{action['content']}\"")
+            else:
+                print(f"   🤖 (no actions recorded)")
+        
         print("=" * 50)

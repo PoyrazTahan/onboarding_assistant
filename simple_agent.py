@@ -169,8 +169,8 @@ async def main():
         print(f"Tool calls: {summary['tool_calls']}")
         print(f"Functions used: {summary['functions_used']}")
         
-        # Print detailed conversation
-        conv_manager.print_conversation()
+        # Print detailed conversation in turns
+        conv_manager.print_conversation_turns()
 
     
 #%%
