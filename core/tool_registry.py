@@ -19,6 +19,15 @@ from monitoring.telemetry import telemetry
 # Load environment
 load_dotenv()
 
+def get_all_kernel_functions():
+    """Get all kernel functions from all tools for registration"""
+    return {
+        'data_operations': DataManager(),
+        # future tools can be added here:
+        # 'api_operations': APIManager(),
+        # 'email_operations': EmailManager(),
+    }
+
 def setup_kernel(debug_mode=False):
     """
     Setup and configure Semantic Kernel with all necessary components
@@ -49,17 +58,19 @@ def setup_kernel(debug_mode=False):
     )
     kernel.add_service(chat_service)
     
-    # Initialize data manager
-    data_manager = DataManager()
+    # Register all tools
+    all_tools = get_all_kernel_functions()
+    data_manager = None
     
-    # Add data plugin
-    if debug_mode:
-        print("📋 Adding data plugin - decorator parsing will be captured in telemetry")
-    
-    data_plugin = kernel.add_plugin(
-        plugin=data_manager,
-        plugin_name="data_plugin"
-    )
+    for tool_name, tool_instance in all_tools.items():
+        if debug_mode:
+            print(f"📋 Adding {tool_name} plugin - decorator parsing captured")
+        
+        kernel.add_plugin(tool_instance, plugin_name=tool_name)
+        
+        # Keep reference to data_manager for backward compatibility
+        if tool_name == 'data_operations':
+            data_manager = tool_instance
     
     # Create execution settings
     settings = OpenAIChatPromptExecutionSettings(
@@ -81,5 +92,5 @@ def get_available_functions(kernel):
     available_functions = []
     for plugin_name, plugin in kernel.plugins.items():
         if plugin_name != 'chat_plugin':  # Skip chat plugin
-            available_functions.extend(list(plugin.functions.keys()))
+            available_functions.extend([f"{plugin_name}.{func}" for func in plugin.functions.keys()])
     return available_functions
