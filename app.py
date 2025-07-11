@@ -24,8 +24,9 @@ if DEBUG_MODE:
     telemetry.enable_logging()
     print("📊 Telemetry logging enabled - capturing all SK operations")
 
-# Now import agent
+# Now import agent and conversation handler
 from core.agent import Agent
+from ui.chat_ui import ConversationHandler
 
 
 async def main():
@@ -40,33 +41,14 @@ async def main():
     # Start session
     session = agent.start_session()
     
-    # Handle initial greeting
-    greeting = agent.handle_initial_greeting()
-    if greeting:
-        print(f"\n🤖 Assistant: {greeting}")
+    # Create conversation handler
+    conversation_handler = ConversationHandler(agent)
     
-    # Setup conversation inputs
-    if TEST_MODE:
-        inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"]
-        print("🧪 Running in TEST MODE with predefined inputs")
-    else:
-        inputs = []  # Will be populated by interactive input later
-        print("💬 Running in INTERACTIVE MODE")
+    # Setup test inputs if in test mode
+    test_inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"] if TEST_MODE else None
     
-    # Conversation loop
-    for i, user_input in enumerate(inputs):
-        print(f"\n👤 User: {user_input}")
-        
-        # Process user input through agent
-        response = await agent.process_user_input(user_input, turn_number=i)
-        
-        # Print assistant response
-        print(f"🤖 Assistant: {response}")
-        
-        # Check if conversation is complete
-        if agent.is_conversation_complete():
-            print("\n✅ All data collected! Conversation complete.")
-            break
+    # Run conversation
+    await conversation_handler.run_conversation(test_mode=TEST_MODE, test_inputs=test_inputs)
     
     # Print final session flow
     session.print_session_flow()
