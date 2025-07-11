@@ -1,0 +1,199 @@
+TELEMETRY LOG - Generated at 2025-07-11T13:16:04.301566
+================================================================================
+
+[2025-07-11T13:15:53.300495] CONVERSATION_START
+  conversation_id: conv_1
+  user_input: Hi! Can you add 15 and 27 for me?
+  └─ Children:
+    [2025-07-11T13:15:53.300503] AI_REQUEST
+      prompt: Processing: Hi! Can you add 15 and 27 for me?
+      model: gpt-4o-mini
+      prompt_length: 45
+
+    [2025-07-11T13:15:57.310080] TOKEN_USAGE
+      input_tokens: 205
+      output_tokens: 26
+      total_tokens: 231
+
+    [2025-07-11T13:15:57.310089] CONVERSATION_END
+      conversation_id: conv_1
+      assistant_response: The sum of 15 and 27 is 42. If you need help with anything else, just let me know!
+
+
+[2025-07-11T13:15:53.303755] PROMPT_INITIAL
+  prompt_hash: 4e8052cf
+  user_content: You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: Hi! Can you add 15 and 27 for me?\nAssistant:
+  full_messages: [{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: Hi! Can you add 15 and 27 for me?\nAssistant:'}]
+  message_count: 1
+
+[2025-07-11T13:15:56.186490] FUNCTION_CALL_START
+  function_name: add_numbers
+  parameters: {'a': 15, 'b': 27}
+  └─ Children:
+    [2025-07-11T13:15:56.186499] FUNCTION_CALL_END
+      function_name: add_numbers
+      result: The sum of 15 and 27 is 42
+
+
+[2025-07-11T13:15:56.189025] PROMPT_EVOLVED
+  original_hash: 4e8052cf
+  evolved_hash: 473a274d
+  additions: function_calls: 1 + function_results: 1
+  message_count: 3
+  evolution: [[ORIGINAL_PROMPT_4e8052cf]] + function_calls: 1 + function_results: 1
+
+[2025-07-11T13:15:57.310064] AI_RESPONSE
+  response: The sum of 15 and 27 is 42. If you need help with anything else, just let me know!
+  model: gpt-4o-mini
+  response_length: 82
+
+[2025-07-11T13:15:57.310095] CONVERSATION_START
+  conversation_id: conv_2
+  user_input: My name is Alice and I am 30 years old. Can you store that?
+  └─ Children:
+    [2025-07-11T13:15:57.310111] AI_REQUEST
+      prompt: Processing: My name is Alice and I am 30 years old. Can you store that?
+      model: gpt-4o-mini
+      prompt_length: 71
+
+    [2025-07-11T13:15:59.356881] TOKEN_USAGE
+      input_tokens: 210
+      output_tokens: 27
+      total_tokens: 237
+
+    [2025-07-11T13:15:59.356942] CONVERSATION_END
+      conversation_id: conv_2
+      assistant_response: I've successfully stored your information, Alice! You're 30 years old. If there's anything else you need, just let me know!
+
+
+[2025-07-11T13:15:57.311683] PROMPT_INITIAL
+  prompt_hash: b11fdeed
+  user_content: You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: My name is Alice and I am 30 years old. Can you store that?\nAssistant:
+  full_messages: [{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: My name is Alice and I am 30 years old. Can you store that?\nAssistant:'}]
+  message_count: 1
+
+[2025-07-11T13:15:58.536709] FUNCTION_CALL_START
+  function_name: store_user_info
+  parameters: {'name': 'Alice', 'age': 30}
+  └─ Children:
+    [2025-07-11T13:15:58.537386] FUNCTION_CALL_END
+      function_name: store_user_info
+      result: Successfully stored information for Alice (age 30)
+
+
+[2025-07-11T13:15:58.539282] PROMPT_EVOLVED
+  original_hash: b11fdeed
+  evolved_hash: 4b46f9d4
+  additions: function_calls: 1 + function_results: 1
+  message_count: 3
+  evolution: [[ORIGINAL_PROMPT_b11fdeed]] + function_calls: 1 + function_results: 1
+
+[2025-07-11T13:15:59.356859] AI_RESPONSE
+  response: I've successfully stored your information, Alice! You're 30 years old. If there's anything else you need, just let me know!
+  model: gpt-4o-mini
+  response_length: 123
+
+[2025-07-11T13:15:59.356950] CONVERSATION_START
+  conversation_id: conv_3
+  user_input: What information do you have about me?
+  └─ Children:
+    [2025-07-11T13:15:59.356967] AI_REQUEST
+      prompt: Processing: What information do you have about me?
+      model: gpt-4o-mini
+      prompt_length: 50
+
+    [2025-07-11T13:16:02.063053] TOKEN_USAGE
+      input_tokens: 192
+      output_tokens: 26
+      total_tokens: 218
+
+    [2025-07-11T13:16:02.063109] CONVERSATION_END
+      conversation_id: conv_3
+      assistant_response: I have your information: Your name is Alice, and you are 30 years old. How can I assist you today?
+
+
+[2025-07-11T13:15:59.358625] PROMPT_INITIAL
+  prompt_hash: 6b316ac6
+  user_content: You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: What information do you have about me?\nAssistant:
+  full_messages: [{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: What information do you have about me?\nAssistant:'}]
+  message_count: 1
+
+[2025-07-11T13:16:01.194560] FUNCTION_CALL_START
+  function_name: get_user_info
+  parameters: {}
+  └─ Children:
+    [2025-07-11T13:16:01.194652] FUNCTION_CALL_END
+      function_name: get_user_info
+      result: Found user: Alice, Age: 30
+
+
+[2025-07-11T13:16:01.195619] PROMPT_EVOLVED
+  original_hash: 6b316ac6
+  evolved_hash: f75e549e
+  additions: function_calls: 1 + function_results: 1
+  message_count: 3
+  evolution: [[ORIGINAL_PROMPT_6b316ac6]] + function_calls: 1 + function_results: 1
+
+[2025-07-11T13:16:02.063028] AI_RESPONSE
+  response: I have your information: Your name is Alice, and you are 30 years old. How can I assist you today?
+  model: gpt-4o-mini
+  response_length: 98
+
+[2025-07-11T13:16:02.063118] CONVERSATION_START
+  conversation_id: conv_4
+  user_input: Can you add 100 and 200, then tell me my info again?
+  └─ Children:
+    [2025-07-11T13:16:02.063137] AI_REQUEST
+      prompt: Processing: Can you add 100 and 200, then tell me my info again?
+      model: gpt-4o-mini
+      prompt_length: 64
+
+    [2025-07-11T13:16:04.300512] TOKEN_USAGE
+      input_tokens: 252
+      output_tokens: 37
+      total_tokens: 289
+
+    [2025-07-11T13:16:04.300533] CONVERSATION_END
+      conversation_id: conv_4
+      assistant_response: The sum of 100 and 200 is 300. 
+
+As for your information, I found you: Alice, Age: 30. How can I assist you further?
+
+
+[2025-07-11T13:16:02.064852] PROMPT_INITIAL
+  prompt_hash: a8950bab
+  user_content: You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: Can you add 100 and 200, then tell me my info again?\nAssistant:
+  full_messages: [{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\nYou have access to functions for:\n- Adding numbers\n- Storing user information \n- Retrieving user information\n\nBe conversational and use the functions when appropriate.\n\nUser: Can you add 100 and 200, then tell me my info again?\nAssistant:'}]
+  message_count: 1
+
+[2025-07-11T13:16:03.172706] FUNCTION_CALL_START
+  function_name: add_numbers
+  parameters: {'a': 100, 'b': 200}
+  └─ Children:
+    [2025-07-11T13:16:03.172716] FUNCTION_CALL_END
+      function_name: add_numbers
+      result: The sum of 100 and 200 is 300
+
+    [2025-07-11T13:16:03.173047] FUNCTION_CALL_END
+      function_name: get_user_info
+      result: Found user: Alice, Age: 30
+
+
+[2025-07-11T13:16:03.172947] FUNCTION_CALL_START
+  function_name: get_user_info
+  parameters: {}
+
+[2025-07-11T13:16:03.174141] PROMPT_EVOLVED
+  original_hash: a8950bab
+  evolved_hash: 3949e81d
+  additions: function_calls: 1 + function_results: 2
+  message_count: 4
+  evolution: [[ORIGINAL_PROMPT_a8950bab]] + function_calls: 1 + function_results: 2
+
+[2025-07-11T13:16:04.300501] AI_RESPONSE
+  response: The sum of 100 and 200 is 300. 
+
+As for your information, I found you: Alice, Age: 30. How can I assist you further?
+  model: gpt-4o-mini
+  response_length: 116
+

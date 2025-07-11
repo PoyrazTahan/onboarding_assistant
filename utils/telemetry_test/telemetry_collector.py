@@ -8,8 +8,121 @@ import json
 import time
 import logging
 import sys
+import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+
+
+class PromptEvolutionHandler(logging.Handler):
+    """Custom logging handler to capture OpenAI request evolution"""
+    
+    def __init__(self, telemetry_collector):
+        super().__init__()
+        self.telemetry = telemetry_collector
+        self.conversation_prompts = {}  # Track prompts per conversation
+        
+    def emit(self, record):
+        try:
+            message = record.getMessage()
+            
+            # Look for OpenAI request options
+            if "Request options:" in message and "json_data" in message:
+                self._extract_prompt_from_request(message)
+                
+        except Exception:
+            # Don't let telemetry errors break the application
+            pass
+    
+    def _extract_prompt_from_request(self, message):
+        """Extract and track prompt evolution from OpenAI request"""
+        try:
+            # Extract the json_data part
+            json_start = message.find("'json_data': {")
+            if json_start == -1:
+                return
+                
+            # Find the matching closing brace for json_data
+            json_part = message[json_start + len("'json_data': "):]
+            
+            # Parse the request data (this is tricky with the log format)
+            # Let's try to extract just the messages array
+            messages_start = json_part.find("'messages': [")
+            if messages_start == -1:
+                return
+                
+            # Extract messages array (simplified parsing)
+            messages_part = json_part[messages_start + len("'messages': "):]
+            
+            # Find the end of messages array by counting brackets
+            bracket_count = 0
+            end_pos = 0
+            for i, char in enumerate(messages_part):
+                if char == '[':
+                    bracket_count += 1
+                elif char == ']':
+                    bracket_count -= 1
+                    if bracket_count == 0:
+                        end_pos = i + 1
+                        break
+            
+            if end_pos > 0:
+                messages_str = messages_part[:end_pos]
+                self._process_messages_evolution(messages_str)
+                
+        except Exception:
+            # Robust parsing - if it fails, just skip
+            pass
+    
+    def _process_messages_evolution(self, messages_str):
+        """Process the evolution of messages in the conversation"""
+        try:
+            # Create a simple hash of the messages for comparison
+            prompt_hash = hashlib.md5(messages_str.encode()).hexdigest()[:8]
+            
+            # Count messages to determine evolution stage
+            message_count = messages_str.count("'role':")
+            
+            if message_count == 1:
+                # Initial prompt - just user message
+                self.telemetry.prompt_initial(messages_str, prompt_hash)
+                self.conversation_prompts['original'] = messages_str
+                self.conversation_prompts['hash'] = prompt_hash
+                
+            elif message_count > 1:
+                # Evolved prompt - has function calls/results
+                if 'original' in self.conversation_prompts:
+                    # Extract what was added
+                    additions = self._extract_additions(messages_str)
+                    self.telemetry.prompt_evolved(
+                        original_hash=self.conversation_prompts['hash'],
+                        evolved_messages=messages_str,
+                        additions=additions,
+                        message_count=message_count
+                    )
+                else:
+                    # Fallback if we missed the original
+                    self.telemetry.prompt_initial(messages_str, prompt_hash)
+                    
+        except Exception:
+            pass
+    
+    def _extract_additions(self, evolved_messages):
+        """Extract what was added to the original prompt"""
+        try:
+            # Count tool calls and tool responses
+            tool_calls = evolved_messages.count("'tool_calls':")
+            tool_responses = evolved_messages.count("'role': 'tool'")
+            
+            additions = []
+            if tool_calls > 0:
+                additions.append(f"function_calls: {tool_calls}")
+            if tool_responses > 0:
+                additions.append(f"function_results: {tool_responses}")
+                
+            return " + ".join(additions) if additions else "unknown_additions"
+            
+        except Exception:
+            return "parsing_failed"
 
 
 class TelemetryCollector:
@@ -19,6 +132,15 @@ class TelemetryCollector:
         self.events: List[Dict[str, Any]] = []
         self.event_stack: List[str] = []  # For hierarchical tracking
         self._setup_traditional_logging()
+        self._setup_prompt_tracking()
+    
+    def _setup_prompt_tracking(self):
+        """Setup prompt evolution tracking"""
+        # Hook into OpenAI client logger
+        openai_logger = logging.getLogger("openai._base_client")
+        prompt_handler = PromptEvolutionHandler(self)
+        openai_logger.addHandler(prompt_handler)
+        openai_logger.setLevel(logging.DEBUG)
     
     def _setup_traditional_logging(self):
         """Setup traditional Python logging to capture SK internal logs"""
@@ -146,6 +268,37 @@ class TelemetryCollector:
             "total_tokens": total_tokens
         })["id"]
     
+    def prompt_initial(self, messages_str: str, prompt_hash: str):
+        """Track initial prompt (first request to LLM)"""
+        # Extract user content for display
+        user_content = self._extract_user_content(messages_str)
+        
+        return self._create_event("PROMPT_INITIAL", {
+            "prompt_hash": prompt_hash,
+            "user_content": user_content,
+            "full_messages": messages_str,
+            "message_count": 1
+        })["id"]
+    
+    def prompt_evolved(self, original_hash: str, evolved_messages: str, additions: str, message_count: int):
+        """Track evolved prompt (subsequent requests with function results)"""
+        evolved_hash = hashlib.md5(evolved_messages.encode()).hexdigest()[:8]
+        
+        return self._create_event("PROMPT_EVOLVED", {
+            "original_hash": original_hash,
+            "evolved_hash": evolved_hash,
+            "additions": additions,
+            "message_count": message_count,
+            "evolution": f"[[ORIGINAL_PROMPT_{original_hash}]] + {additions}"
+        })["id"]
+    
+    def prompt_reread(self, prompt_hash: str):
+        """Track when same prompt is read again"""
+        return self._create_event("PROMPT_REREAD", {
+            "prompt_hash": prompt_hash,
+            "note": "Same prompt re-read, no changes"
+        })["id"]
+    
     def error(self, error_type: str, message: str, details: Dict[str, Any] = None):
         """Track errors"""
         return self._create_event("ERROR", {
@@ -192,6 +345,21 @@ class TelemetryCollector:
             f.write("HUMAN READABLE FORMAT:\n")
             f.write("-" * 50 + "\n")
             self._write_events_to_file(f, self.events, indent=0)
+    
+    def _extract_user_content(self, messages_str: str):
+        """Extract user content from messages for display"""
+        try:
+            # Simple extraction of user content
+            user_start = messages_str.find("'content': '")
+            if user_start != -1:
+                content_start = user_start + len("'content': '")
+                content_end = messages_str.find("'", content_start)
+                if content_end != -1:
+                    content = messages_str[content_start:content_end]
+                    return content
+            return "Could not extract user content"
+        except Exception:
+            return "Extraction failed"
         
         return filename
     
@@ -210,14 +378,9 @@ class TelemetryCollector:
             prefix = "  " * indent
             file.write(f"{prefix}[{timestamp}] {event_type}\n")
             
-            # Write event data
+            # Write event data without truncation
             for key, value in data.items():
-                if key in ["prompt", "response", "assistant_response"] and len(str(value)) > 100:
-                    # Truncate long text
-                    truncated = str(value)[:100] + "..."
-                    file.write(f"{prefix}  {key}: {truncated}\n")
-                else:
-                    file.write(f"{prefix}  {key}: {value}\n")
+                file.write(f"{prefix}  {key}: {value}\n")
             
             # Write children with increased indent
             if event["children"]:

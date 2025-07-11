@@ -1,0 +1,431 @@
+[
+  {
+    "id": "CONVERSATION_START_1752228953300",
+    "type": "CONVERSATION_START",
+    "timestamp": "2025-07-11T13:15:53.300495",
+    "data": {
+      "conversation_id": "conv_1",
+      "user_input": "Hi! Can you add 15 and 27 for me?"
+    },
+    "children": [
+      {
+        "id": "AI_REQUEST_1752228953300",
+        "type": "AI_REQUEST",
+        "timestamp": "2025-07-11T13:15:53.300503",
+        "data": {
+          "prompt": "Processing: Hi! Can you add 15 and 27 for me?",
+          "model": "gpt-4o-mini",
+          "prompt_length": 45
+        },
+        "children": []
+      },
+      {
+        "id": "TOKEN_USAGE_1752228957310",
+        "type": "TOKEN_USAGE",
+        "timestamp": "2025-07-11T13:15:57.310080",
+        "data": {
+          "input_tokens": 205,
+          "output_tokens": 26,
+          "total_tokens": 231
+        },
+        "children": []
+      },
+      {
+        "id": "CONVERSATION_END_1752228957310",
+        "type": "CONVERSATION_END",
+        "timestamp": "2025-07-11T13:15:57.310089",
+        "data": {
+          "conversation_id": "conv_1",
+          "assistant_response": "The sum of 15 and 27 is 42. If you need help with anything else, just let me know!"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_INITIAL_1752228953303",
+    "type": "PROMPT_INITIAL",
+    "timestamp": "2025-07-11T13:15:53.303755",
+    "data": {
+      "prompt_hash": "4e8052cf",
+      "user_content": "You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: Hi! Can you add 15 and 27 for me?\\nAssistant:",
+      "full_messages": "[{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: Hi! Can you add 15 and 27 for me?\\nAssistant:'}]",
+      "message_count": 1
+    },
+    "children": []
+  },
+  {
+    "id": "FUNCTION_CALL_START_1752228956186",
+    "type": "FUNCTION_CALL_START",
+    "timestamp": "2025-07-11T13:15:56.186490",
+    "data": {
+      "function_name": "add_numbers",
+      "parameters": {
+        "a": 15,
+        "b": 27
+      }
+    },
+    "children": [
+      {
+        "id": "FUNCTION_CALL_END_1752228956186",
+        "type": "FUNCTION_CALL_END",
+        "timestamp": "2025-07-11T13:15:56.186499",
+        "data": {
+          "function_name": "add_numbers",
+          "result": "The sum of 15 and 27 is 42"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_EVOLVED_1752228956189",
+    "type": "PROMPT_EVOLVED",
+    "timestamp": "2025-07-11T13:15:56.189025",
+    "data": {
+      "original_hash": "4e8052cf",
+      "evolved_hash": "473a274d",
+      "additions": "function_calls: 1 + function_results: 1",
+      "message_count": 3,
+      "evolution": "[[ORIGINAL_PROMPT_4e8052cf]] + function_calls: 1 + function_results: 1"
+    },
+    "children": []
+  },
+  {
+    "id": "AI_RESPONSE_1752228957310",
+    "type": "AI_RESPONSE",
+    "timestamp": "2025-07-11T13:15:57.310064",
+    "data": {
+      "response": "The sum of 15 and 27 is 42. If you need help with anything else, just let me know!",
+      "model": "gpt-4o-mini",
+      "response_length": 82
+    },
+    "children": []
+  },
+  {
+    "id": "CONVERSATION_START_1752228957310",
+    "type": "CONVERSATION_START",
+    "timestamp": "2025-07-11T13:15:57.310095",
+    "data": {
+      "conversation_id": "conv_2",
+      "user_input": "My name is Alice and I am 30 years old. Can you store that?"
+    },
+    "children": [
+      {
+        "id": "AI_REQUEST_1752228957310",
+        "type": "AI_REQUEST",
+        "timestamp": "2025-07-11T13:15:57.310111",
+        "data": {
+          "prompt": "Processing: My name is Alice and I am 30 years old. Can you store that?",
+          "model": "gpt-4o-mini",
+          "prompt_length": 71
+        },
+        "children": []
+      },
+      {
+        "id": "TOKEN_USAGE_1752228959356",
+        "type": "TOKEN_USAGE",
+        "timestamp": "2025-07-11T13:15:59.356881",
+        "data": {
+          "input_tokens": 210,
+          "output_tokens": 27,
+          "total_tokens": 237
+        },
+        "children": []
+      },
+      {
+        "id": "CONVERSATION_END_1752228959356",
+        "type": "CONVERSATION_END",
+        "timestamp": "2025-07-11T13:15:59.356942",
+        "data": {
+          "conversation_id": "conv_2",
+          "assistant_response": "I've successfully stored your information, Alice! You're 30 years old. If there's anything else you need, just let me know!"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_INITIAL_1752228957311",
+    "type": "PROMPT_INITIAL",
+    "timestamp": "2025-07-11T13:15:57.311683",
+    "data": {
+      "prompt_hash": "b11fdeed",
+      "user_content": "You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: My name is Alice and I am 30 years old. Can you store that?\\nAssistant:",
+      "full_messages": "[{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: My name is Alice and I am 30 years old. Can you store that?\\nAssistant:'}]",
+      "message_count": 1
+    },
+    "children": []
+  },
+  {
+    "id": "FUNCTION_CALL_START_1752228958536",
+    "type": "FUNCTION_CALL_START",
+    "timestamp": "2025-07-11T13:15:58.536709",
+    "data": {
+      "function_name": "store_user_info",
+      "parameters": {
+        "name": "Alice",
+        "age": 30
+      }
+    },
+    "children": [
+      {
+        "id": "FUNCTION_CALL_END_1752228958537",
+        "type": "FUNCTION_CALL_END",
+        "timestamp": "2025-07-11T13:15:58.537386",
+        "data": {
+          "function_name": "store_user_info",
+          "result": "Successfully stored information for Alice (age 30)"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_EVOLVED_1752228958539",
+    "type": "PROMPT_EVOLVED",
+    "timestamp": "2025-07-11T13:15:58.539282",
+    "data": {
+      "original_hash": "b11fdeed",
+      "evolved_hash": "4b46f9d4",
+      "additions": "function_calls: 1 + function_results: 1",
+      "message_count": 3,
+      "evolution": "[[ORIGINAL_PROMPT_b11fdeed]] + function_calls: 1 + function_results: 1"
+    },
+    "children": []
+  },
+  {
+    "id": "AI_RESPONSE_1752228959356",
+    "type": "AI_RESPONSE",
+    "timestamp": "2025-07-11T13:15:59.356859",
+    "data": {
+      "response": "I've successfully stored your information, Alice! You're 30 years old. If there's anything else you need, just let me know!",
+      "model": "gpt-4o-mini",
+      "response_length": 123
+    },
+    "children": []
+  },
+  {
+    "id": "CONVERSATION_START_1752228959356",
+    "type": "CONVERSATION_START",
+    "timestamp": "2025-07-11T13:15:59.356950",
+    "data": {
+      "conversation_id": "conv_3",
+      "user_input": "What information do you have about me?"
+    },
+    "children": [
+      {
+        "id": "AI_REQUEST_1752228959356",
+        "type": "AI_REQUEST",
+        "timestamp": "2025-07-11T13:15:59.356967",
+        "data": {
+          "prompt": "Processing: What information do you have about me?",
+          "model": "gpt-4o-mini",
+          "prompt_length": 50
+        },
+        "children": []
+      },
+      {
+        "id": "TOKEN_USAGE_1752228962063",
+        "type": "TOKEN_USAGE",
+        "timestamp": "2025-07-11T13:16:02.063053",
+        "data": {
+          "input_tokens": 192,
+          "output_tokens": 26,
+          "total_tokens": 218
+        },
+        "children": []
+      },
+      {
+        "id": "CONVERSATION_END_1752228962063",
+        "type": "CONVERSATION_END",
+        "timestamp": "2025-07-11T13:16:02.063109",
+        "data": {
+          "conversation_id": "conv_3",
+          "assistant_response": "I have your information: Your name is Alice, and you are 30 years old. How can I assist you today?"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_INITIAL_1752228959358",
+    "type": "PROMPT_INITIAL",
+    "timestamp": "2025-07-11T13:15:59.358625",
+    "data": {
+      "prompt_hash": "6b316ac6",
+      "user_content": "You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: What information do you have about me?\\nAssistant:",
+      "full_messages": "[{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: What information do you have about me?\\nAssistant:'}]",
+      "message_count": 1
+    },
+    "children": []
+  },
+  {
+    "id": "FUNCTION_CALL_START_1752228961194",
+    "type": "FUNCTION_CALL_START",
+    "timestamp": "2025-07-11T13:16:01.194560",
+    "data": {
+      "function_name": "get_user_info",
+      "parameters": {}
+    },
+    "children": [
+      {
+        "id": "FUNCTION_CALL_END_1752228961194",
+        "type": "FUNCTION_CALL_END",
+        "timestamp": "2025-07-11T13:16:01.194652",
+        "data": {
+          "function_name": "get_user_info",
+          "result": "Found user: Alice, Age: 30"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_EVOLVED_1752228961195",
+    "type": "PROMPT_EVOLVED",
+    "timestamp": "2025-07-11T13:16:01.195619",
+    "data": {
+      "original_hash": "6b316ac6",
+      "evolved_hash": "f75e549e",
+      "additions": "function_calls: 1 + function_results: 1",
+      "message_count": 3,
+      "evolution": "[[ORIGINAL_PROMPT_6b316ac6]] + function_calls: 1 + function_results: 1"
+    },
+    "children": []
+  },
+  {
+    "id": "AI_RESPONSE_1752228962063",
+    "type": "AI_RESPONSE",
+    "timestamp": "2025-07-11T13:16:02.063028",
+    "data": {
+      "response": "I have your information: Your name is Alice, and you are 30 years old. How can I assist you today?",
+      "model": "gpt-4o-mini",
+      "response_length": 98
+    },
+    "children": []
+  },
+  {
+    "id": "CONVERSATION_START_1752228962063",
+    "type": "CONVERSATION_START",
+    "timestamp": "2025-07-11T13:16:02.063118",
+    "data": {
+      "conversation_id": "conv_4",
+      "user_input": "Can you add 100 and 200, then tell me my info again?"
+    },
+    "children": [
+      {
+        "id": "AI_REQUEST_1752228962063",
+        "type": "AI_REQUEST",
+        "timestamp": "2025-07-11T13:16:02.063137",
+        "data": {
+          "prompt": "Processing: Can you add 100 and 200, then tell me my info again?",
+          "model": "gpt-4o-mini",
+          "prompt_length": 64
+        },
+        "children": []
+      },
+      {
+        "id": "TOKEN_USAGE_1752228964300",
+        "type": "TOKEN_USAGE",
+        "timestamp": "2025-07-11T13:16:04.300512",
+        "data": {
+          "input_tokens": 252,
+          "output_tokens": 37,
+          "total_tokens": 289
+        },
+        "children": []
+      },
+      {
+        "id": "CONVERSATION_END_1752228964300",
+        "type": "CONVERSATION_END",
+        "timestamp": "2025-07-11T13:16:04.300533",
+        "data": {
+          "conversation_id": "conv_4",
+          "assistant_response": "The sum of 100 and 200 is 300. \n\nAs for your information, I found you: Alice, Age: 30. How can I assist you further?"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "PROMPT_INITIAL_1752228962064",
+    "type": "PROMPT_INITIAL",
+    "timestamp": "2025-07-11T13:16:02.064852",
+    "data": {
+      "prompt_hash": "a8950bab",
+      "user_content": "You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: Can you add 100 and 200, then tell me my info again?\\nAssistant:",
+      "full_messages": "[{'role': 'user', 'content': 'You are a helpful assistant that can perform calculations and manage user data.\\nYou have access to functions for:\\n- Adding numbers\\n- Storing user information \\n- Retrieving user information\\n\\nBe conversational and use the functions when appropriate.\\n\\nUser: Can you add 100 and 200, then tell me my info again?\\nAssistant:'}]",
+      "message_count": 1
+    },
+    "children": []
+  },
+  {
+    "id": "FUNCTION_CALL_START_1752228963172",
+    "type": "FUNCTION_CALL_START",
+    "timestamp": "2025-07-11T13:16:03.172706",
+    "data": {
+      "function_name": "add_numbers",
+      "parameters": {
+        "a": 100,
+        "b": 200
+      }
+    },
+    "children": [
+      {
+        "id": "FUNCTION_CALL_END_1752228963172",
+        "type": "FUNCTION_CALL_END",
+        "timestamp": "2025-07-11T13:16:03.172716",
+        "data": {
+          "function_name": "add_numbers",
+          "result": "The sum of 100 and 200 is 300"
+        },
+        "children": []
+      },
+      {
+        "id": "FUNCTION_CALL_END_1752228963173",
+        "type": "FUNCTION_CALL_END",
+        "timestamp": "2025-07-11T13:16:03.173047",
+        "data": {
+          "function_name": "get_user_info",
+          "result": "Found user: Alice, Age: 30"
+        },
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "FUNCTION_CALL_START_1752228963172",
+    "type": "FUNCTION_CALL_START",
+    "timestamp": "2025-07-11T13:16:03.172947",
+    "data": {
+      "function_name": "get_user_info",
+      "parameters": {}
+    },
+    "children": []
+  },
+  {
+    "id": "PROMPT_EVOLVED_1752228963174",
+    "type": "PROMPT_EVOLVED",
+    "timestamp": "2025-07-11T13:16:03.174141",
+    "data": {
+      "original_hash": "a8950bab",
+      "evolved_hash": "3949e81d",
+      "additions": "function_calls: 1 + function_results: 2",
+      "message_count": 4,
+      "evolution": "[[ORIGINAL_PROMPT_a8950bab]] + function_calls: 1 + function_results: 2"
+    },
+    "children": []
+  },
+  {
+    "id": "AI_RESPONSE_1752228964300",
+    "type": "AI_RESPONSE",
+    "timestamp": "2025-07-11T13:16:04.300501",
+    "data": {
+      "response": "The sum of 100 and 200 is 300. \n\nAs for your information, I found you: Alice, Age: 30. How can I assist you further?",
+      "model": "gpt-4o-mini",
+      "response_length": 116
+    },
+    "children": []
+  }
+]
