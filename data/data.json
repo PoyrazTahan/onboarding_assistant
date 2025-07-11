@@ -1,5 +1,5 @@
 {
-  "age": null,
-  "weight": null,
+  "age": 25,
+  "weight": "70kg",
   "height": null
 }

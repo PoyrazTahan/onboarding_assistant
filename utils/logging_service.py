@@ -15,16 +15,9 @@ class LoggingService(OpenAIChatCompletion):
         self.__dict__['current_block_id'] = None
     
     async def get_chat_message_contents(self, *args, **kwargs):
-        print(f"\n🔄 API CALL")
-        
-        # Get available functions
-        functions = []
-        if 'kernel' in kwargs and hasattr(kwargs['kernel'], 'plugins'):
-            for name, plugin in kwargs['kernel'].plugins.items():
-                if name != 'chat_plugin':
-                    functions.extend(plugin.functions.keys())
-        
-        print(f"📋 Functions available: {functions}")
+        # Simple API call indicator without detailed debug info
+        if not DEBUG_MODE:
+            print(f"\n🔄 API CALL")
         
         # Make the actual API call
         result = await super().get_chat_message_contents(*args, **kwargs)
@@ -37,7 +30,10 @@ class LoggingService(OpenAIChatCompletion):
                     for item in msg.items:
                         if hasattr(item, 'function_call_result'):
                             r = item.function_call_result
-                            print(f"   🔧 {r.function_name} → {r.result}")
+                            
+                            # Only print function calls if not in debug mode
+                            if not DEBUG_MODE:
+                                print(f"   🔧 {r.function_name} → {r.result}")
                             
                             # Try to extract arguments from the function call
                             args = {}
@@ -56,5 +52,7 @@ class LoggingService(OpenAIChatCompletion):
                                 r.result
                             )
         
-        print("✅ COMPLETE")
+        # Simple completion indicator
+        if not DEBUG_MODE:
+            print("✅ COMPLETE")
         return result

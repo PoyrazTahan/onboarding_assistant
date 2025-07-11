@@ -5,8 +5,12 @@ Provides kernel functions for updating and querying user data
 """
 
 import json
+import sys
 from semantic_kernel.functions import kernel_function
 from semantic_kernel.prompt_template.input_variable import InputVariable
+
+# Check for debug mode
+DEBUG_MODE = "--debug" in sys.argv
 
 class DataManager:
     """Manages the simple data.json file"""
@@ -89,13 +93,20 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        # DETAILED TRACKING: Add timestamp and call counter
-        import datetime
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        print(f"🚀 [{timestamp}] Function called: update_data(field='{field}', value='{value}')")
-        
+        # Load current data
         data = self.load_data()
-        print(f"   📊 Current data before update: {data}")
+        
+        # Log to telemetry if in debug mode
+        if DEBUG_MODE:
+            try:
+                from utils.telemetry_collector import telemetry
+                telemetry.local_function_log(
+                    source="DataManager.update_data",
+                    message=f"Called with field='{field}', value='{value}'",
+                    data={"current_data": data, "field": field, "value": value}
+                )
+            except ImportError:
+                pass
         
         # Make field case-insensitive by checking lowercase versions
         field_lower = field.lower()
@@ -110,19 +121,27 @@ class DataManager:
         # Use the correctly cased field name
         actual_field = field_map[field_lower]
         
-        print(f"   🔄 Attempting to update '{actual_field}' from '{data[actual_field]}' to '{value}'")
-        
         # VALIDATION: Prevent empty/meaningless updates
         if not value or value.strip() == '':
             error_msg = f"Cannot update {actual_field} with empty value. Only update when you have actual user-provided information."
-            print(f"   ❌ {error_msg}")
+            if DEBUG_MODE:
+                telemetry.local_function_log(
+                    source="DataManager.update_data",
+                    message="Validation failed: empty value",
+                    data={"error": error_msg}
+                )
             return error_msg
         
         # VALIDATION: Prevent unnecessary updates of existing data
         current_value = data[actual_field]
         if current_value is not None and str(current_value) == str(value):
             error_msg = f"Field {actual_field} already has value '{current_value}'. No update needed unless user provides new information."
-            print(f"   ⚠️ {error_msg}")
+            if DEBUG_MODE:
+                telemetry.local_function_log(
+                    source="DataManager.update_data",
+                    message="Validation failed: duplicate value",
+                    data={"error": error_msg}
+                )
             return error_msg
         
         # Convert to appropriate type
@@ -138,9 +157,14 @@ class DataManager:
         
         self.save_data(data)
         result = f"Updated {actual_field} to {data[actual_field]}"
-        print(f"   ✅ {result}")
-        print(f"   📊 Data after update: {data}")
-        print()
+        
+        # Log successful update to telemetry
+        if DEBUG_MODE:
+            telemetry.local_function_log(
+                source="DataManager.update_data",
+                message=f"Successfully updated {actual_field}",
+                data={"field": actual_field, "new_value": data[actual_field], "result": result}
+            )
         
         # Add action to current block in session
         if self.session and self.current_block_id:
@@ -150,6 +174,7 @@ class DataManager:
                 {"field": field, "value": value},
                 result
             )
+        
         
         return result
     
@@ -170,13 +195,20 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        # DETAILED TRACKING: Add timestamp
-        import datetime
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        print(f"💬 [{timestamp}] Function called: ask_question(field='{field}', message='{message}')")
-        
+        # Load current data
         data = self.load_data()
-        print(f"   📊 Current data: {data}")
+        
+        # Log to telemetry if in debug mode
+        if DEBUG_MODE:
+            try:
+                from utils.telemetry_collector import telemetry
+                telemetry.local_function_log(
+                    source="DataManager.ask_question",
+                    message=f"Called with field='{field}'",
+                    data={"current_data": data, "field": field, "message": message}
+                )
+            except ImportError:
+                pass
         
         # Make field case-insensitive
         field_lower = field.lower()
@@ -185,14 +217,17 @@ class DataManager:
         
         if field_lower in field_map:
             actual_field = field_map[field_lower]
-            print(f"   🤔 Asking about field '{actual_field}' which currently has value: {data.get(actual_field, 'NOT_FOUND')}")
             result = f"[ASKING] {actual_field}: {message}"
         else:
-            print(f"   🤔 Asking about field '{field}' which currently has value: NOT_FOUND")
             result = f"[ASKING] {field}: {message}"
         
-        print(f"   📝 Result: {result}")
-        print()
+        # Log result to telemetry
+        if DEBUG_MODE:
+            telemetry.local_function_log(
+                source="DataManager.ask_question",
+                message=f"Generated question for {field}",
+                data={"result": result}
+            )
         
         # Add action to current block in session
         if self.session and self.current_block_id:
@@ -202,5 +237,6 @@ class DataManager:
                 {"field": field, "message": message},
                 result
             )
+        
         
         return result

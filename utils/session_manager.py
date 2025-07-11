@@ -73,6 +73,18 @@ class Session:
                 block['response']['actions'].append(action)
                 return True
         return False
+    
+    def add_token_usage(self, block_id, input_tokens, output_tokens):
+        """Add token usage information to an AI block"""
+        for block in self.blocks:
+            if block.get('id') == block_id and block['type'] == 'ai_interaction':
+                block['response']['token_usage'] = {
+                    'input_tokens': input_tokens,
+                    'output_tokens': output_tokens,
+                    'total_tokens': input_tokens + output_tokens
+                }
+                return True
+        return False
         
     def get_conversation_history(self, max_blocks=10):
         """Get conversation history for prompt inclusion"""

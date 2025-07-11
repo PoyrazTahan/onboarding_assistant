@@ -12,7 +12,20 @@ import os
 import json
 import asyncio
 import sys
+import hashlib
 from dotenv import load_dotenv
+
+# Check for debug flag FIRST
+DEBUG_MODE = "--debug" in sys.argv
+
+# Import telemetry BEFORE any SK imports to capture everything
+from utils.telemetry_collector import telemetry
+
+# Enable telemetry logging immediately if in debug mode
+if DEBUG_MODE:
+    telemetry.enable_logging()
+    print("📊 Telemetry logging enabled - capturing all SK operations")
+
 import semantic_kernel as sk
 
 from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
@@ -23,9 +36,6 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 from utils.session_manager import Session
 from utils.logging_service import LoggingService
 from utils.data_manager import DataManager
-
-# Check for debug flag
-DEBUG_MODE = "--debug" in sys.argv
 
 # Load environment
 load_dotenv()
@@ -65,6 +75,10 @@ async def main():
     
     print("🧪 Testing Simple Data Collection Agent...")
     
+    # Clear telemetry events if in debug mode
+    if DEBUG_MODE:
+        telemetry.clear_events()
+    
     # Initialize session
     session = Session()
     print(f"📝 Started session: {session.id}")
@@ -89,7 +103,10 @@ async def main():
     # Connect chat service to session
     chat_service.__dict__['session'] = session
     
-    # Add data plugin
+    # Add data plugin (this is where function decorator parsing happens)
+    if DEBUG_MODE:
+        print("📋 Adding data plugin - decorator parsing will be captured in telemetry")
+    
     data_plugin = kernel.add_plugin(
         plugin=data_manager,
         plugin_name="data_plugin"
@@ -132,6 +149,10 @@ async def main():
     for i, user_input in enumerate(test_inputs):
         print(f"\n👤 User: {user_input}")
         
+        # Start conversation tracking in telemetry
+        if DEBUG_MODE:
+            telemetry.conversation_start(f"turn_{i+1}", user_input)
+        
         # Reload data to get latest state
         data = data_manager.load_data()
         current_status = data_manager.get_data_status()
@@ -146,8 +167,16 @@ async def main():
         prompt = f"{base_prompt}\n\nCONVERSATION HISTORY:\n{conversation_history}\n\nCURRENT DATA STATUS:\n{current_status}\n\nUser: {{{{$user_input}}}}\nAssistant: "
         
         if DEBUG_MODE:
-            print(f"\n📝 PROMPT LENGTH: {len(prompt)} characters")
-            print(f"📊 DATA STATUS: {len([k for k, v in data.items() if v is not None])}/3 fields filled")
+            # Track prompt in telemetry (initial or evolved)
+            if i == 0:
+                telemetry.prompt_initial(prompt, hashlib.md5(prompt.encode()).hexdigest()[:8])
+            else:
+                telemetry.prompt_evolved(
+                    original_hash=hashlib.md5(base_prompt.encode()).hexdigest()[:8],
+                    evolved_messages=prompt,
+                    additions=f"conversation_turn_{i+1}",
+                    message_count=i+1
+                )
         
         # Create chat function with updated prompt
         chat_function = kernel.add_function(
@@ -176,10 +205,7 @@ async def main():
         data_manager.current_block_id = block_id
         chat_service.__dict__['current_block_id'] = block_id
         
-        if DEBUG_MODE:
-            print(f"\n\nFULL PROMPT:\n======================")
-            print(prompt)
-            print("======================\n")
+        # Remove FULL PROMPT printing - it's in telemetry now
         
         # Try using KernelArguments to pass settings
         arguments = KernelArguments(
@@ -207,11 +233,22 @@ async def main():
         # Print assistant response
         print(f"🤖 Assistant: {clean_response}")
         
+        # Process response in telemetry if debug mode
         if DEBUG_MODE:
-            # Extract token usage from metadata
+            telemetry.process_kernel_response(response, user_input, {
+                "model": "gpt-4o-mini",
+                "conversation_turn": i + 1,
+                "data_state": data.copy(),
+                "prompt_length": len(prompt)
+            })
+            
+            # Extract token usage from metadata and add to session
             usage = chat_message.metadata.get('usage')
-            print(f"\n📊 TOKEN USAGE:")
-            print(f"   INPUT: {usage.prompt_tokens} | OUTPUT: {usage.completion_tokens} | TOTAL: {usage.prompt_tokens + usage.completion_tokens}")
+            if usage:
+                session.add_token_usage(block_id, usage.prompt_tokens, usage.completion_tokens)
+            
+            # End conversation in telemetry
+            telemetry.conversation_end(f"turn_{i+1}", clean_response)
         
         # Stop if all data is collected
         data = data_manager.load_data()
@@ -227,6 +264,42 @@ async def main():
     os.makedirs("data/sessions", exist_ok=True)
     session.save_to_file()
     print(f"\n💾 Session saved to: data/sessions/{session.id}.json")
+    
+    # Save telemetry if enabled
+    if DEBUG_MODE:
+        os.makedirs("data/telemetry", exist_ok=True)
+        
+        # Print prompt evolution (as requested to keep)
+        print("\n🔄 PROMPT EVOLUTION")
+        print("=" * 60)
+        
+        prompt_events = [e for e in telemetry.get_events() if e['type'] in ['PROMPT_INITIAL', 'PROMPT_EVOLVED']]
+        for i, event in enumerate(prompt_events):
+            timestamp = event['timestamp'].split('T')[1][:8]
+            if event['type'] == 'PROMPT_INITIAL':
+                print(f"\n{i+1}. [{timestamp}] INITIAL (hash: {event['data']['prompt_hash']})")
+                print(f"   Length: {event['data']['prompt_length'] if 'prompt_length' in event['data'] else len(event['data']['full_messages'])} chars")
+                # Show preview of initial prompt
+                preview = event['data']['user_content'][:200] + "..." if len(event['data']['user_content']) > 200 else event['data']['user_content']
+                print(f"   Preview: {preview}")
+            else:
+                print(f"\n{i+1}. [{timestamp}] EVOLVED (hash: {event['data']['evolved_hash']})")
+                print(f"   Length: {len(event['data']['evolved_messages'])} chars")
+                print(f"   Changes: {event['data']['additions']}")
+        
+        # Save telemetry outputs
+        telemetry.to_timestamped_log("data/telemetry/telemetry")
+        telemetry.to_json_file("data/telemetry/telemetry_data.json")
+        
+        # Get traditional log filename
+        traditional_log = telemetry.get_traditional_log_filename()
+        
+        print("\n\n📊 TELEMETRY SAVED")
+        print("=" * 40)
+        print(f"📄 Structured log: data/telemetry/telemetry_structured_*.log")
+        print(f"📊 Structured data: data/telemetry/telemetry_data.json")
+        print(f"🔍 Traditional SK dump: {traditional_log}")
+        print(f"📈 Total events collected: {len(telemetry.get_events())}")
 
     
 #%%

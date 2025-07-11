@@ -1,7 +1,0 @@
-{
-  "ai_model_id": "gemini-2.0-flash-lite",
-  "temperature": 1,
-  "max_tokens": 1000,
-  "top_p": 0.9,
-  "top_k": 40
-}

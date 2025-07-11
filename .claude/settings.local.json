@@ -6,7 +6,8 @@
       "Bash(python:*)",
       "Bash(rm:*)",
       "Bash(mv:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
