@@ -12,6 +12,15 @@ from semantic_kernel.prompt_template.input_variable import InputVariable
 # Check for debug mode
 DEBUG_MODE = "--debug" in sys.argv
 
+# Setup telemetry once at module level
+TELEMETRY_AVAILABLE = False
+if DEBUG_MODE:
+    try:
+        from monitoring.telemetry import telemetry
+        TELEMETRY_AVAILABLE = True
+    except ImportError:
+        pass
+
 class DataManager:
     """Manages the simple data.json file"""
     
@@ -19,6 +28,33 @@ class DataManager:
         self.data_file = data_file
         self.session = session
         self.current_block_id = current_block_id
+        
+    def _log_function_call(self, function_name, inputs, outputs, metadata=None):
+        """Unified telemetry logging for function calls"""
+        if TELEMETRY_AVAILABLE:
+            telemetry.local_function_log(
+                source=f"DataManager.{function_name}",
+                message=f"Function executed: {function_name}",
+                data={
+                    "inputs": inputs,
+                    "outputs": outputs,
+                    "metadata": metadata or {}
+                }
+            )
+    
+    def _handle_error(self, error_type, field, value, message):
+        """Unified error handling with logging"""
+        print(f"   ❌ {message}")
+        self._log_function_call("update_data", 
+                               {"field": field, "value": value}, 
+                               {"result": message}, 
+                               {"success": False, "error_type": error_type})
+        return message
+    
+    def _add_to_session(self, function_name, args, result):
+        """Add action to session if available"""
+        if self.session and self.current_block_id:
+            self.session.add_action_to_block(self.current_block_id, function_name, args, result)
         
     def load_data(self):
         """Load data from JSON file"""
@@ -38,43 +74,26 @@ class DataManager:
         filled = {key: value for key, value in data.items() if value is not None}
         missing = [key for key, value in data.items() if value is None]
         
-        status_report = []
+        # Build status sections
+        recorded_section = [
+            "=== RECORDED USER DATA ===",
+            "• No data recorded yet" if not filled else 
+            "\n".join([f"- {field.capitalize()}: {value}" for field, value in filled.items()])
+        ]
         
-        # === RECORDED DATA SECTION ===
-        status_report.append("=== RECORDED USER DATA ===")
-        if not filled:
-            status_report.append("• No data recorded yet")
-        else:
-            for field, value in filled.items():
-                if field == "age":
-                    status_report.append(f"- Age: {value}")
-                elif field == "weight":
-                    status_report.append(f"- Weight: {value}")
-                elif field == "height":
-                    status_report.append(f"- Height: {value}")
+        missing_section = [
+            "\n=== MISSING FIELDS ===",
+            "• All fields complete!" if not missing else 
+            "\n".join([f"• {field.capitalize()}: null" for field in missing])
+        ]
         
-        # === MISSING FIELDS SECTION ===
-        status_report.append("\n=== MISSING FIELDS ===")
-        if not missing:
-            status_report.append("• All fields complete!")
-        else:
-            for field in missing:
-                if field == "age":
-                    status_report.append("• Age: null")
-                elif field == "weight":
-                    status_report.append("• Weight: null")
-                elif field == "height":
-                    status_report.append("• Height: null")
+        next_action = [
+            "\n=== WORKFLOW GUIDANCE ===",
+            f"• NEXT ACTION: Ask question for '{missing[0]}' field" if missing else 
+            "• NEXT ACTION: All data collected, end conversation"
+        ]
         
-        # === NEXT ACTION GUIDANCE ===
-        status_report.append("\n=== WORKFLOW GUIDANCE ===")
-        if missing:
-            next_field = missing[0]  # First missing field
-            status_report.append(f"• NEXT ACTION: Ask question for '{next_field}' field")
-        else:
-            status_report.append("• NEXT ACTION: All data collected, end conversation")
-        
-        return "\n".join(status_report)
+        return "\n".join(recorded_section + missing_section + next_action)
     
     @kernel_function(
         name="update_data",
@@ -93,89 +112,48 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        # Load current data
         data = self.load_data()
         
-        # Log to telemetry if in debug mode
-        if DEBUG_MODE:
-            try:
-                from monitoring.telemetry import telemetry
-                telemetry.local_function_log(
-                    source="DataManager.update_data",
-                    message=f"Called with field='{field}', value='{value}'",
-                    data={"current_data": data, "field": field, "value": value}
-                )
-            except ImportError:
-                pass
+        # Find actual field name (case-insensitive)
+        actual_field = None
+        for key in data.keys():
+            if key.lower() == field.lower():
+                actual_field = key
+                break
         
-        # Make field case-insensitive by checking lowercase versions
-        field_lower = field.lower()
-        available_fields = list(data.keys())
-        field_map = {f.lower(): f for f in available_fields}
+        # Validation with unified error handling
+        if actual_field is None:
+            return self._handle_error("field_not_found", field, value,
+                                    f"Error: Field '{field}' not found. Available fields: {list(data.keys())}")
         
-        if field_lower not in field_map:
-            error_msg = f"Error: Field '{field}' not found. Available fields: {available_fields}"
-            print(f"   ❌ {error_msg}")
-            return error_msg
+        if not value or not value.strip():
+            return self._handle_error("empty_value", field, value,
+                                    f"Cannot update {actual_field} with empty value. Only update when you have actual user-provided information.")
         
-        # Use the correctly cased field name
-        actual_field = field_map[field_lower]
+        if data[actual_field] is not None and str(data[actual_field]) == str(value):
+            return self._handle_error("duplicate_value", field, value,
+                                    f"Field {actual_field} already has value '{data[actual_field]}'. No update needed unless user provides new information.")
         
-        # VALIDATION: Prevent empty/meaningless updates
-        if not value or value.strip() == '':
-            error_msg = f"Cannot update {actual_field} with empty value. Only update when you have actual user-provided information."
-            if DEBUG_MODE:
-                telemetry.local_function_log(
-                    source="DataManager.update_data",
-                    message="Validation failed: empty value",
-                    data={"error": error_msg}
-                )
-            return error_msg
-        
-        # VALIDATION: Prevent unnecessary updates of existing data
-        current_value = data[actual_field]
-        if current_value is not None and str(current_value) == str(value):
-            error_msg = f"Field {actual_field} already has value '{current_value}'. No update needed unless user provides new information."
-            if DEBUG_MODE:
-                telemetry.local_function_log(
-                    source="DataManager.update_data",
-                    message="Validation failed: duplicate value",
-                    data={"error": error_msg}
-                )
-            return error_msg
-        
-        # Convert to appropriate type
+        # Type conversion
         if actual_field in ["age", "height"]:
             try:
                 data[actual_field] = int(value)
             except ValueError:
-                error_msg = f"Error: {actual_field} must be a number, got '{value}'"
-                print(f"   ❌ {error_msg}")
-                return error_msg
+                return self._handle_error("type_conversion", field, value,
+                                        f"Error: {actual_field} must be a number, got '{value}'")
         else:
             data[actual_field] = value
         
+        # Success path
         self.save_data(data)
         result = f"Updated {actual_field} to {data[actual_field]}"
         
-        # Log successful update to telemetry
-        if DEBUG_MODE:
-            telemetry.local_function_log(
-                source="DataManager.update_data",
-                message=f"Successfully updated {actual_field}",
-                data={"field": actual_field, "new_value": data[actual_field], "result": result}
-            )
+        self._log_function_call("update_data", 
+                               {"field": field, "value": value, "current_data": data}, 
+                               {"result": result, "actual_field": actual_field, "new_value": data[actual_field]}, 
+                               {"success": True})
         
-        # Add action to current block in session
-        if self.session and self.current_block_id:
-            self.session.add_action_to_block(
-                self.current_block_id,
-                "update_data",
-                {"field": field, "value": value},
-                result
-            )
-        
-        
+        self._add_to_session("update_data", {"field": field, "value": value}, result)
         return result
     
     @kernel_function(
@@ -195,48 +173,21 @@ class DataManager:
             is_required=True
         )
     ) -> str:
-        # Load current data
         data = self.load_data()
         
-        # Log to telemetry if in debug mode
-        if DEBUG_MODE:
-            try:
-                from monitoring.telemetry import telemetry
-                telemetry.local_function_log(
-                    source="DataManager.ask_question",
-                    message=f"Called with field='{field}'",
-                    data={"current_data": data, "field": field, "message": message}
-                )
-            except ImportError:
-                pass
+        # Simple field validation (normalize to lowercase for comparison)
+        if field.lower() not in data:
+            return self._handle_error("field_not_found", field, message,
+                                    f"Error: Field '{field}' not found. Available fields: {list(data.keys())}")
         
-        # Make field case-insensitive
-        field_lower = field.lower()
-        available_fields = list(data.keys())
-        field_map = {f.lower(): f for f in available_fields}
+        # Use the actual lowercase field name from data
+        actual_field = field.lower()
+        result = f"[ASKING] {actual_field}: {message}"
         
-        if field_lower in field_map:
-            actual_field = field_map[field_lower]
-            result = f"[ASKING] {actual_field}: {message}"
-        else:
-            result = f"[ASKING] {field}: {message}"
+        self._log_function_call("ask_question", 
+                               {"field": field, "message": message}, 
+                               {"result": result, "actual_field": actual_field}, 
+                               {"success": True})
         
-        # Log result to telemetry
-        if DEBUG_MODE:
-            telemetry.local_function_log(
-                source="DataManager.ask_question",
-                message=f"Generated question for {field}",
-                data={"result": result}
-            )
-        
-        # Add action to current block in session
-        if self.session and self.current_block_id:
-            self.session.add_action_to_block(
-                self.current_block_id,
-                "ask_question",
-                {"field": field, "message": message},
-                result
-            )
-        
-        
+        self._add_to_session("ask_question", {"field": field, "message": message}, result)
         return result
