@@ -34,41 +34,11 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 # Import our utilities
 from utils.session_manager import Session
-from utils.logging_service import LoggingService
 from utils.data_manager import DataManager
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 
 # Load environment
 load_dotenv()
-
-def debug_function_registration(settings, data_plugin, kernel):
-    print(f"\n📋 SETTINGS: Function={settings.function_choice_behavior.type_.value.upper()}(max:{settings.function_choice_behavior.maximum_auto_invoke_attempts}) | Temp={settings.temperature or 'def'} | MaxTok={settings.max_tokens or '∞'} | Stream={settings.stream}")
-    print(f"✅ Plugin added with functions: {[f.name for f in data_plugin.functions.values()]}")
-    
-    # Debug function registration details
-    print(f"\n🔧 FUNCTION REGISTRATION:")
-    for func_name, func in data_plugin.functions.items():
-        print(f"   {func_name}: {func.description} | Params: {[p.name for p in func.parameters]}")
-    print("\n=== ENHANCED PARAMETER DEBUG ===")
-    for func_name, func in data_plugin.functions.items():
-        print(f"Function: {func_name}")
-        print(f"  - Return type: {func.return_parameter}")
-        for param in func.parameters:
-            print(f"  Parameter: {param.name}")
-            print(f"    - Direct description: {param.description}")
-            if hasattr(param, 'default_value') and param.default_value:
-                if hasattr(param.default_value, 'description'):
-                    print(f"    - InputVariable description: {param.default_value.description}")
-    
-    
-    print("\n=== SK KERNEL INSPECTION ===")
-    print(f"Kernel plugins: {list(kernel.plugins.keys())}")
-    print(f"Kernel services: {list(kernel.services.keys())}")
-    
-    # Show registered functions
-    print(f"Registered functions:")
-    for plugin_name, plugin in kernel.plugins.items():
-        funcs = list(plugin.functions.keys())
-        print(f"  {plugin_name}: {funcs}")
 
 async def main():
     """Main function to test our simple agent"""
@@ -92,16 +62,13 @@ async def main():
     # Create kernel
     kernel = sk.Kernel()
     
-    # Add OpenAI service with logging
-    chat_service = LoggingService(
+    # Add OpenAI service 
+    chat_service = OpenAIChatCompletion(
         ai_model_id="gpt-4o-mini",
         api_key=api_key,
         service_id="openai"
     )
     kernel.add_service(chat_service)
-    
-    # Connect chat service to session
-    chat_service.__dict__['session'] = session
     
     # Add data plugin (this is where function decorator parsing happens)
     if DEBUG_MODE:
@@ -140,9 +107,6 @@ async def main():
         session.add_programmatic_block(initial_greeting, block_type="greeting")
         print(f"\n🤖 Assistant: {initial_greeting}")
 
-    if DEBUG_MODE:
-        debug_function_registration(settings, data_plugin, kernel)
-    
     # Conversation loop - support multiple interactions
     test_inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"]
     
@@ -200,12 +164,9 @@ async def main():
             data_snapshot=data.copy()
         )
         
-        # Update data manager and chat service with current block
+        # Update data manager with current block
         data_manager.session = session
         data_manager.current_block_id = block_id
-        chat_service.__dict__['current_block_id'] = block_id
-        
-        # Remove FULL PROMPT printing - it's in telemetry now
         
         # Try using KernelArguments to pass settings
         arguments = KernelArguments(
@@ -232,6 +193,32 @@ async def main():
         
         # Print assistant response
         print(f"🤖 Assistant: {clean_response}")
+        
+        # Extract function calls from response and add to session
+        if hasattr(response, 'value'):
+            messages = response.value if isinstance(response.value, list) else [response.value]
+            for message in messages:
+                if hasattr(message, 'items'):
+                    for item in message.items:
+                        if hasattr(item, 'function_call_result'):
+                            result = item.function_call_result
+                            
+                            # Extract arguments if available
+                            args = {}
+                            if hasattr(item, 'function_call') and hasattr(item.function_call, 'arguments'):
+                                try:
+                                    import json
+                                    args = json.loads(item.function_call.arguments)
+                                except:
+                                    pass
+                            
+                            # Add to session block
+                            session.add_action_to_block(
+                                block_id,
+                                result.function_name,
+                                args,
+                                result.result
+                            )
         
         # Process response in telemetry if debug mode
         if DEBUG_MODE:
