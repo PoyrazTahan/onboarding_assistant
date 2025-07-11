@@ -17,30 +17,21 @@ class PromptManager:
         self._load_templates()
     
     def _load_templates(self):
-        """Load all prompt templates from templates directory"""
+        """Load all prompt templates - fail fast if missing"""
         template_files = {
             'system_prompt': 'system_prompt.txt',
-            'fallback_prompt': 'fallback_prompt.txt',
             'greeting_new': 'greeting_new.txt',
             'greeting_return': 'greeting_return.txt'
         }
         
         for template_name, filename in template_files.items():
             filepath = os.path.join(self.templates_dir, filename)
-            try:
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    self._templates[template_name] = f.read().strip()
-            except FileNotFoundError:
-                print(f"⚠️  Template {filename} not found, using fallback")
-                self._templates[template_name] = f"[Missing template: {template_name}]"
+            with open(filepath, 'r', encoding='utf-8') as f:
+                self._templates[template_name] = f.read().strip()
     
     def get_system_prompt(self) -> str:
         """Get the main system prompt for agent reasoning"""
-        # Try to load the main system prompt, fallback to simpler version
-        if 'system_prompt' in self._templates and not self._templates['system_prompt'].startswith('[Missing'):
-            return self._templates['system_prompt']
-        else:
-            return self._templates.get('fallback_prompt', 'You are a helpful assistant.')
+        return self._templates['system_prompt']
     
     def get_greeting(self, data_state: Dict[str, Any]) -> str:
         """Get appropriate greeting based on current data state"""
@@ -49,10 +40,10 @@ class PromptManager:
         
         if has_data:
             # User has some data, use return greeting
-            return self._templates.get('greeting_return', 'Can I ask you a few more questions?')
+            return self._templates['greeting_return']
         else:
             # New user, use new greeting
-            return self._templates.get('greeting_new', 'Hello! Let me help you with your information.')
+            return self._templates['greeting_new']
     
     def build_conversation_prompt(
         self, 
