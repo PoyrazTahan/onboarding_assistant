@@ -22,7 +22,11 @@ if DEBUG_MODE:
         pass
 
 class DataManager:
-    """Manages the simple data.json file"""
+    """Manages the simple data.json file
+    
+    DUAL TRACKING: Stage 1 (Agent) tracks LLM requests, Stage 2 (here) tracks actual execution.
+    Both needed for debugging: LLM behavior vs function execution vs routing issues.
+    """
     
     def __init__(self, data_file="data/data.json", session=None, current_block_id=None):
         self.data_file = data_file
@@ -52,7 +56,7 @@ class DataManager:
         return message
     
     def _add_to_session(self, function_name, args, result):
-        """Add action to session if available"""
+        """STAGE 2: Track actual execution (vs Stage 1 LLM requests in Agent)"""
         if self.session and self.current_block_id:
             self.session.add_action_to_block(self.current_block_id, function_name, args, result)
         
@@ -153,6 +157,7 @@ class DataManager:
                                {"result": result, "actual_field": actual_field, "new_value": data[actual_field]}, 
                                {"success": True})
         
+        # STAGE 2 TRACKING: Record successful execution
         self._add_to_session("update_data", {"field": field, "value": value}, result)
         return result
     
@@ -189,5 +194,6 @@ class DataManager:
                                {"result": result, "actual_field": actual_field}, 
                                {"success": True})
         
+        # STAGE 2 TRACKING: Record successful execution  
         self._add_to_session("ask_question", {"field": field, "message": message}, result)
         return result

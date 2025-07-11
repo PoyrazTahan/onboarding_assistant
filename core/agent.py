@@ -143,7 +143,8 @@ class Agent:
         changes = dict_diff(block_start_state, final_data)
         self.session.blocks[-1]['response']['data_changes'] = changes
         
-        # Extract function calls from response and add to session
+        # STAGE 1: Track LLM requests (vs Stage 2 actual execution in kernel_functions)
+        # Purpose: Debug LLM behavior, routing issues, compare request vs execution
         if hasattr(response, 'value'):
             messages = response.value if isinstance(response.value, list) else [response.value]
             for message in messages:
@@ -160,7 +161,7 @@ class Agent:
                                 except:
                                     pass
                             
-                            # Add to session block
+                            # Add to session block (STAGE 1: LLM request tracking)
                             self.session.add_action_to_block(
                                 block_id,
                                 result.function_name,
