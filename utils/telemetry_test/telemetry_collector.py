@@ -6,6 +6,8 @@ Collects events as structured data instead of raw logs
 
 import json
 import time
+import logging
+import sys
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -16,6 +18,37 @@ class TelemetryCollector:
     def __init__(self):
         self.events: List[Dict[str, Any]] = []
         self.event_stack: List[str] = []  # For hierarchical tracking
+        self._setup_traditional_logging()
+    
+    def _setup_traditional_logging(self):
+        """Setup traditional Python logging to capture SK internal logs"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.traditional_log_file = f"telemetry_{timestamp}.log"
+        
+        # Configure comprehensive logging for maximum debugging
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(self.traditional_log_file)
+            ],
+            force=True  # Override any existing configuration
+        )
+        
+        # Configure all SK loggers for maximum verbosity
+        sk_loggers = [
+            "semantic_kernel",
+            "semantic_kernel.kernel", 
+            "semantic_kernel.functions",
+            "semantic_kernel.connectors",
+            "semantic_kernel.connectors.ai.open_ai",
+            "semantic_kernel.connectors.ai.open_ai.services.open_ai_chat_completion",
+            "semantic_kernel.functions.kernel_function"
+        ]
+        
+        for logger_name in sk_loggers:
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(logging.DEBUG)
         
     def _create_event(self, event_type: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Create a base event structure"""
@@ -137,6 +170,34 @@ class TelemetryCollector:
             f.write("=" * 80 + "\n\n")
             
             self._write_events_to_file(f, self.events, indent=0)
+    
+    def to_timestamped_log(self, base_filename: str = "telemetry"):
+        """Create timestamped log file with all events dumped as raw data"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{base_filename}_{timestamp}.log"
+        
+        with open(filename, 'w') as f:
+            f.write(f"COMPLETE TELEMETRY DUMP - {datetime.now().isoformat()}\n")
+            f.write("=" * 100 + "\n")
+            f.write(f"Total Events: {len(self.events)}\n")
+            f.write("=" * 100 + "\n\n")
+            
+            # Dump everything as JSON for complete data preservation
+            f.write("RAW EVENT DATA:\n")
+            f.write("-" * 50 + "\n")
+            json.dump(self.events, f, indent=2, default=str)
+            f.write("\n\n")
+            
+            # Also include human readable version
+            f.write("HUMAN READABLE FORMAT:\n")
+            f.write("-" * 50 + "\n")
+            self._write_events_to_file(f, self.events, indent=0)
+        
+        return filename
+    
+    def get_traditional_log_filename(self) -> str:
+        """Get the filename of the traditional logging output"""
+        return self.traditional_log_file
     
     def _write_events_to_file(self, file, events: List[Dict[str, Any]], indent: int):
         """Write events hierarchically to file"""

@@ -14,7 +14,7 @@ from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion, OpenAICh
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 from semantic_kernel.functions import kernel_function
 
-# Import the telemetry collector
+# Import the telemetry collector (this sets up traditional logging automatically)
 from telemetry_collector import telemetry
 
 load_dotenv()
@@ -193,9 +193,13 @@ Assistant: """
     telemetry.to_log_file("telemetry_structured.log")
     telemetry.to_json_file("telemetry_data.json")
     
+    # Get the traditional log filename
+    traditional_log = telemetry.get_traditional_log_filename()
+    
     print(f"Telemetry collection complete!")
     print(f"📄 Human-readable log: telemetry_structured.log")
     print(f"📊 Structured data: telemetry_data.json")
+    print(f"🔍 Traditional SK logs: {traditional_log}")
     print(f"📈 Total events collected: {len(telemetry.get_events())}")
 
 
