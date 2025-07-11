@@ -13,10 +13,10 @@ import json
 import asyncio
 import sys
 import hashlib
-from dotenv import load_dotenv
 
-# Check for debug flag FIRST
+# Check for debug and test flags FIRST
 DEBUG_MODE = "--debug" in sys.argv
+TEST_MODE = "--test" in sys.argv
 
 # Import telemetry BEFORE any SK imports to capture everything
 from utils.telemetry_collector import telemetry
@@ -26,62 +26,22 @@ if DEBUG_MODE:
     telemetry.enable_logging()
     print("📊 Telemetry logging enabled - capturing all SK operations")
 
-import semantic_kernel as sk
-
-from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatPromptExecutionSettings
+# Now import SK-related modules
 from semantic_kernel.functions.kernel_arguments import KernelArguments
-
-# Import our utilities
 from utils.session_manager import Session
-from utils.data_manager import DataManager
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
-
-# Load environment
-load_dotenv()
+from kernel_setup import setup_kernel, get_available_functions
 
 async def main():
     """Main function to test our simple agent"""
     
     print("🧪 Testing Simple Data Collection Agent...")
     
-    # Clear telemetry events if in debug mode
-    if DEBUG_MODE:
-        telemetry.clear_events()
-    
     # Initialize session
     session = Session()
     print(f"📝 Started session: {session.id}")
     
-    # Initialize data manager first
-    data_manager = DataManager()
-    
-    # Get API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    
-    # Create kernel
-    kernel = sk.Kernel()
-    
-    # Add OpenAI service 
-    chat_service = OpenAIChatCompletion(
-        ai_model_id="gpt-4o-mini",
-        api_key=api_key,
-        service_id="openai"
-    )
-    kernel.add_service(chat_service)
-    
-    # Add data plugin (this is where function decorator parsing happens)
-    if DEBUG_MODE:
-        print("📋 Adding data plugin - decorator parsing will be captured in telemetry")
-    
-    data_plugin = kernel.add_plugin(
-        plugin=data_manager,
-        plugin_name="data_plugin"
-    )
-    
-    settings = OpenAIChatPromptExecutionSettings(
-        function_choice_behavior=FunctionChoiceBehavior.Auto()
-    )
+    # Setup kernel and components (telemetry already enabled if needed)
+    kernel, data_manager, settings = setup_kernel(debug_mode=DEBUG_MODE)
     
     # Load base prompt from file - using reasoning-based prompt
     try:
@@ -108,9 +68,14 @@ async def main():
         print(f"\n🤖 Assistant: {initial_greeting}")
 
     # Conversation loop - support multiple interactions
-    test_inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"]
+    if TEST_MODE:
+        inputs = ["Hello, I need help filling out my data.", "I'm 25 years old", "I weigh 70kg"]
+        print("🧪 Running in TEST MODE with predefined inputs")
+    else:
+        inputs = []  # Will be populated by interactive input later
+        print("💬 Running in INTERACTIVE MODE")
     
-    for i, user_input in enumerate(test_inputs):
+    for i, user_input in enumerate(inputs):
         print(f"\n👤 User: {user_input}")
         
         # Start conversation tracking in telemetry
@@ -151,10 +116,7 @@ async def main():
         
         # Process user input
         # Get available functions for context
-        available_functions = []
-        for plugin_name, plugin in kernel.plugins.items():
-            if plugin_name != 'chat_plugin':
-                available_functions.extend(list(plugin.functions.keys()))
+        available_functions = get_available_functions(kernel)
         
         # Start AI block with full context
         block_id = session.start_ai_block(
