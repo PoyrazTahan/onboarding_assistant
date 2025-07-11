@@ -19,7 +19,7 @@ DEBUG_MODE = "--debug" in sys.argv
 TEST_MODE = "--test" in sys.argv
 
 # Import telemetry BEFORE any SK imports to capture everything
-from utils.telemetry_collector import telemetry
+from monitoring.telemetry import telemetry
 
 # Enable telemetry logging immediately if in debug mode
 if DEBUG_MODE:
@@ -28,8 +28,8 @@ if DEBUG_MODE:
 
 # Now import SK-related modules
 from semantic_kernel.functions.kernel_arguments import KernelArguments
-from utils.session_manager import Session
-from kernel_setup import setup_kernel, get_available_functions
+from memory.session_manager import Session
+from core.tool_registry import setup_kernel, get_available_functions
 
 async def main():
     """Main function to test our simple agent"""

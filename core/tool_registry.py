@@ -13,8 +13,8 @@ from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from dotenv import load_dotenv
 
 # Import utilities
-from utils.data_manager import DataManager
-from utils.telemetry_collector import telemetry
+from tools.data_manager import DataManager
+from monitoring.telemetry import telemetry
 
 # Load environment
 load_dotenv()

@@ -99,7 +99,7 @@ class DataManager:
         # Log to telemetry if in debug mode
         if DEBUG_MODE:
             try:
-                from utils.telemetry_collector import telemetry
+                from monitoring.telemetry import telemetry
                 telemetry.local_function_log(
                     source="DataManager.update_data",
                     message=f"Called with field='{field}', value='{value}'",
@@ -201,7 +201,7 @@ class DataManager:
         # Log to telemetry if in debug mode
         if DEBUG_MODE:
             try:
-                from utils.telemetry_collector import telemetry
+                from monitoring.telemetry import telemetry
                 telemetry.local_function_log(
                     source="DataManager.ask_question",
                     message=f"Called with field='{field}'",
