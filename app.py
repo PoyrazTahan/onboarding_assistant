@@ -53,6 +53,10 @@ async def main():
     # Print final session flow
     session.print_session_flow()
     
+    # Update session end state before saving
+    final_data = agent.data_manager.load_data()
+    session.update_session_end_state(final_data)
+    
     # Save session for debugging
     os.makedirs("data/sessions", exist_ok=True)
     session.save_to_file()

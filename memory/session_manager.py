@@ -13,7 +13,8 @@ class Session:
     def __init__(self, session_id=None):
         self.id = session_id or f"session_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.blocks = []
-        self.data_state = {}  # Current state of data.json
+        self.session_start_state = {}
+        self.session_end_state = {}
         self.created_at = datetime.datetime.now().isoformat()
         
     def add_programmatic_block(self, content, block_type="greeting"):
@@ -85,6 +86,10 @@ class Session:
                 }
                 return True
         return False
+    
+    def update_session_end_state(self, final_data_state):
+        """Update session end state with final data"""
+        self.session_end_state = final_data_state.copy()
         
     def get_conversation_history(self, max_blocks=10):
         """Get conversation history for prompt inclusion"""
@@ -206,7 +211,8 @@ class Session:
             'id': self.id,
             'created_at': self.created_at,
             'blocks': self.blocks,
-            'data_state': self.data_state
+            'session_start_state': self.session_start_state,
+            'session_end_state': self.session_end_state
         }
         
         with open(filepath, 'w') as f:
@@ -221,6 +227,7 @@ class Session:
         session = cls(session_id=data['id'])
         session.created_at = data['created_at']
         session.blocks = data['blocks']
-        session.data_state = data['data_state']
+        session.session_start_state = data.get('session_start_state', {})
+        session.session_end_state = data.get('session_end_state', {})
         
         return session

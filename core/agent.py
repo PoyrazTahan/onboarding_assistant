@@ -11,6 +11,7 @@ from memory.session_manager import Session
 from core.tool_registry import setup_kernel, get_available_functions
 from monitoring.telemetry import telemetry
 from prompts.prompt_manager import PromptManager
+from utils.dict_utils import dict_diff
 
 
 class Agent:
@@ -37,6 +38,8 @@ class Agent:
     def start_session(self):
         """Start a new conversation session"""
         self.session = Session()
+        # Set session start state
+        self.session.session_start_state = self.data_manager.load_data().copy()
         if self.debug_mode:
             print(f"📝 Started session: {self.session.id}")
         return self.session
@@ -66,9 +69,6 @@ class Agent:
         # Reload data to get latest state
         data = self.data_manager.load_data()
         current_status = self.data_manager.get_data_status()
-        
-        # Update session's data state
-        self.session.data_state = data.copy()
         
         # Get updated conversation history
         conversation_history = self.session.get_conversation_history()
@@ -136,6 +136,12 @@ class Agent:
         
         # Complete the AI block
         self.session.complete_ai_block(block_id, str(response.value), clean_response)
+        
+        # Track what changed during this block and add to last block
+        final_data = self.data_manager.load_data()
+        block_start_state = self.session.blocks[-1]['context']['data_state_snapshot']
+        changes = dict_diff(block_start_state, final_data)
+        self.session.blocks[-1]['response']['data_changes'] = changes
         
         # Extract function calls from response and add to session
         if hasattr(response, 'value'):
