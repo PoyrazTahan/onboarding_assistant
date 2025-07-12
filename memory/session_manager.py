@@ -249,6 +249,10 @@ class ConversationStageManager:
         self.test_data = {}
         self.pending_test_response = None
         
+        # Widget management (for proper block separation)
+        self.pending_widget = None
+        self.widget_completion = None  # Hidden context for LLM
+        
     def enable_test_mode(self, test_data_file="data/test.json"):
         """Enable test mode and load test responses"""
         self.test_mode = True
@@ -313,6 +317,27 @@ class ConversationStageManager:
             return response
         return None
     
+    def flag_widget_needed(self, widget_info):
+        """Flag that a widget needs to be executed after LLM response"""
+        self.pending_widget = widget_info
+        print(f"    🎛️ Stage Manager: Widget flagged for field '{widget_info['field']}'")
+    
+    def get_pending_widget(self):
+        """Get and clear pending widget"""
+        if self.pending_widget:
+            widget_info = self.pending_widget
+            self.pending_widget = None
+            return widget_info
+        return None
+    
+    def get_and_clear_widget_completion(self):
+        """Get and clear widget completion for hidden LLM context"""
+        if self.widget_completion:
+            completion = self.widget_completion
+            self.widget_completion = None
+            return completion
+        return None
+    
     def get_stage_summary(self):
         """Get current stage information for debugging"""
         return {
@@ -320,5 +345,6 @@ class ConversationStageManager:
             'last_question_field': self.last_question_field,
             'questions_asked': len(self.question_history),
             'function_calls': len(self.function_call_log),
-            'test_mode': self.test_mode
+            'test_mode': self.test_mode,
+            'pending_widget': self.pending_widget is not None
         }

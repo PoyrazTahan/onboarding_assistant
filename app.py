@@ -42,7 +42,43 @@ class ConversationHandler:
         self._is_complete = agent.is_conversation_complete
         self._get_greeting = agent.handle_initial_greeting
     
-        
+    def _execute_widget_and_get_user_input(self, widget_info):
+        """Execute widget and return what should be the next user input"""
+        try:
+            # Initialize widget handler
+            from ui.widget_handler import WidgetHandler
+            widget_handler = WidgetHandler()
+            
+            # Execute widget and get selection
+            selected_value = widget_handler.show_widget_interface(widget_info["question_structure"])
+            
+            if selected_value:
+                # Auto-call update_data with selected value
+                update_result = self.agent.data_manager.update_data(widget_info["field"], selected_value)
+                print(f"    ✅ WIDGET: Auto-updated {widget_info['field']} = {selected_value}")
+                
+                # Store completion info for hidden LLM context injection
+                widget_completion = {
+                    "field": widget_info["field"],
+                    "selected_value": selected_value,
+                    "update_result": update_result
+                }
+                
+                # Store in session for next LLM call context injection
+                session = self.agent.get_session()
+                session.stage_manager.widget_completion = widget_completion
+                
+                # Return the value as user input for the next block
+                return selected_value
+            else:
+                # Widget cancelled - continue with fallback
+                return None
+                
+        except Exception as e:
+            error_msg = f"Widget execution error: {e}"
+            print(f"    ❌ WIDGET ERROR: {error_msg}")
+            return None
+    
     async def run_test_mode(self):
         """Run conversation with stage manager real-time detection"""
         print_system_message("🧪 Running in TEST MODE with stage manager")
@@ -73,16 +109,27 @@ class ConversationHandler:
                 print_system_message("✅ All data collected! Conversation complete.")
                 break
             
-            # Immediately check for pending test response (hooks just triggered)
-            test_response = session.stage_manager.get_pending_test_response()
-            
-            if test_response:
-                print(f"    🎯 TEST MODE: Detected question, next input will be: '{test_response}'")
-                user_input = test_response
+            # Check for pending widget first (highest priority)
+            widget_info = session.stage_manager.get_pending_widget()
+            if widget_info:
+                # Execute widget after LLM response is shown
+                selected_value = self._execute_widget_and_get_user_input(widget_info)
+                if selected_value:
+                    user_input = selected_value
+                    print(f"    🎛️ WIDGET: Selected '{selected_value}', using as next user input")
+                else:
+                    user_input = "Please continue"
             else:
-                # Only use fallback if we genuinely have no test response
-                print(f"    🤖 TEST MODE: No question detected, continuing conversation")
-                user_input = "Please continue, try to use available functions_calls correctly."
+                # Check for test mode automation  
+                test_response = session.stage_manager.get_pending_test_response()
+                
+                if test_response:
+                    print(f"    🎯 TEST MODE: Detected question, next input will be: '{test_response}'")
+                    user_input = test_response
+                else:
+                    # Only use fallback if we genuinely have no test response
+                    print(f"    🤖 TEST MODE: No question detected, continuing conversation")
+                    user_input = "Please continue, try to use available functions_calls correctly."
             
             turn_number += 1
     
@@ -122,6 +169,24 @@ class ConversationHandler:
                 # Clear thinking indicator and show response
                 clear_thinking_indicator()
                 print_agent_message(response)
+                
+                # Check for pending widget after LLM response
+                session = self.agent.get_session()
+                widget_info = session.stage_manager.get_pending_widget()
+                if widget_info:
+                    # Execute widget after LLM response is shown
+                    selected_value = self._execute_widget_and_get_user_input(widget_info)
+                    
+                    if selected_value:
+                        # Continue with next turn automatically using widget selection
+                        print_user_message(selected_value)
+                        print_thinking_indicator()
+                        
+                        # Process widget selection as user input in next block
+                        next_response = await self._process_input(selected_value, turn_number=turn_number+1)
+                        clear_thinking_indicator()
+                        print_agent_message(next_response)
+                        turn_number += 1  # Extra increment for widget turn
                 
                 turn_number += 1
                 

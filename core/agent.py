@@ -73,12 +73,22 @@ class Agent:
         # Get updated conversation history
         conversation_history = self.session.get_conversation_history()
         
+        # Check for hidden widget completion context
+        widget_completion = self.session.stage_manager.get_and_clear_widget_completion()
+        hidden_context = ""
+        if widget_completion:
+            hidden_context = f"\n\nCRITICAL: DO NOT call update_data for {widget_completion['field']} - it was already updated via widget to {widget_completion['selected_value']}. Result: {widget_completion['update_result']}. Just acknowledge the selection and continue to the next missing field."
+        
         # Build prompt with current state using Prompt Manager
         prompt = self.prompt_manager.build_conversation_prompt(
             conversation_history=conversation_history,
             current_status=current_status,
             user_input_placeholder="{{$user_input}}"
         )
+        
+        # Inject hidden widget context if available
+        if hidden_context:
+            prompt = prompt + hidden_context
         
         if self.debug_mode:
             # Track prompt in telemetry (initial or evolved)

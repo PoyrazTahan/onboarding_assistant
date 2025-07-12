@@ -83,63 +83,41 @@ class DataManager:
         return field_lower in widget_fields and widget_fields[field_lower].get("enabled", False)
     
     def _handle_widget_question(self, field, message):
-        """Handle widget-enabled field question with UI display and auto-update"""
-        # Log initial ask_question for telemetry
+        """Flag widget for post-response execution to maintain proper block separation"""
+        
+        # Log widget detection for telemetry
         self._log_function_call("ask_question", 
                                {"field": field, "message": message}, 
-                               {"widget_detected": True}, 
+                               {"widget_detected": True, "flagged_for_execution": True}, 
                                {"success": True, "widget": True})
         
-        # STAGE 2 TRACKING: Record widget ask
-        self._add_to_session("ask_question", {"field": field, "message": message}, 
-                           f"[WIDGET_TRIGGERED] {field}: {message}")
+        # Get widget configuration for this field
+        widget_config = self.widget_config["widget_fields"][field]
         
-        try:
-            # Initialize widget handler if needed (lazy loading)
-            if not self.widget_handler:
-                from ui.widget_handler import WidgetHandler
-                self.widget_handler = WidgetHandler()
-            
-            # Get widget configuration for this field
-            widget_config = self.widget_config["widget_fields"][field]
-            
-            # Create widget question structure
-            widget_question = {
+        # Create widget information for later execution
+        widget_info = {
+            "field": field,
+            "message": message,
+            "widget_config": widget_config,
+            "question_structure": {
                 "question_text": message,
                 "field": field,
                 "options": widget_config.get("options", []),
                 "type": widget_config.get("type", "select")
             }
-            
-            # Show widget UI and get user selection (ACTUAL VALUE, not number)
-            selected_value = self.widget_handler.show_widget_interface(widget_question)
-            
-            if selected_value:
-                # Automatically update data with selected value
-                update_result = self.update_data(field, selected_value)
-                
-                # STAGE 2 TRACKING: Record widget completion
-                self._add_to_session("widget_complete", 
-                                   {"field": field, "selected_value": selected_value}, 
-                                   f"[WIDGET_COMPLETED] {field}: {selected_value}")
-                
-                # Return result that shows user ALREADY PROVIDED the answer via widget
-                # This makes LLM think user answered the question, not that we're still asking
-                return f"[USER_ANSWERED] {field}: User selected {selected_value} via interactive widget. {field.capitalize()} has been updated."
-            else:
-                # Widget was cancelled or failed
-                return f"{message}\n❌ Widget selection cancelled"
-                
-        except Exception as e:
-            # Fallback to normal question if widget fails
-            error_msg = f"Widget error: {e}"
-            self._log_function_call("ask_question", 
-                                   {"field": field, "message": message}, 
-                                   {"widget_error": error_msg}, 
-                                   {"success": False, "widget": True})
-            
-            # Fall back to normal asking behavior
-            return f"[ASKING] {field}: {message} (widget unavailable)"
+        }
+        
+        # Flag widget for execution after LLM response
+        if self.session and self.session.stage_manager:
+            self.session.stage_manager.flag_widget_needed(widget_info)
+        
+        # Return simple [ASKING] response - widget will execute after LLM responds
+        result = f"[ASKING] {field}: {message}"
+        
+        # STAGE 2 TRACKING: Record the ask (widget execution will be tracked separately)
+        self._add_to_session("ask_question", {"field": field, "message": message}, result)
+        
+        return result
         
     def load_data(self):
         """Load data from JSON file"""
