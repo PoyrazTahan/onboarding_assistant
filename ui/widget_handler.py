@@ -59,52 +59,48 @@ class WidgetHandler:
     
     def show_widget_interface(self, question: Dict) -> Optional[str]:
         """Show widget interface and get user selection"""
-        from ui.chat_ui import print_widget_interface, print_widget_completed
+        from ui.chat_ui import print_widget_box
         
-        print_widget_interface()
-        print(f"\n📝 {question['question_text']}")
+        question_text = question['question_text']
         
         # Handle different question formats
         if "options" in question:
             # Regular options question
             options = question["options"]
-            print("\nSeçenekler:")
-            for i, option in enumerate(options, 1):
-                print(f"{i}) {option}")
         elif question.get("expected_format") == "scale":
             # Scale question (1-10)
             scale = question.get("scale", "1-10")
-            print(f"\nSeçenekler ({scale} arasında):")
             start, end = map(int, scale.split("-"))
             options = [str(i) for i in range(start, end + 1)]
-            for i, option in enumerate(options, 1):
-                print(f"{i}) {option}")
         else:
             print("❌ No options available for this question")
             return None
         
+        # Show widget box with all options
+        print_widget_box(question_text, options)
+        
         # Get user input
         while True:
             try:
-                user_input = input("\nSeçiminizi yapın (sadece rakam): ").strip()
+                user_input = input("    Seçiminizi yapın (sadece rakam): ").strip()
                 choice_num = int(user_input)
                 
                 if 1 <= choice_num <= len(options):
                     selected_option = options[choice_num - 1]
-                    print(f"✅ Seçiminiz: {selected_option}")
-                    print_widget_completed()
+                    # Show widget box again with selected option highlighted
+                    print_widget_box(question_text, options, selected_option)
                     return selected_option
                 else:
-                    print(f"❌ Lütfen 1-{len(options)} arasında bir rakam girin")
+                    print(f"    ❌ Lütfen 1-{len(options)} arasında bir rakam girin")
                     
             except ValueError:
-                print("❌ Lütfen sadece rakam girin")
+                print("    ❌ Lütfen sadece rakam girin")
             except (KeyboardInterrupt, EOFError):
-                print("\n❌ Widget iptal edildi (test mode)")
+                print("\n    ❌ Widget iptal edildi (test mode)")
                 # Return actual option text instead of just "1"
                 if options:
                     selected_option = options[0]
-                    print(f"✅ Test seçimi: {selected_option}")
+                    print_widget_box(question_text, options, selected_option)
                     return selected_option
                 return "1"
     

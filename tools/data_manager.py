@@ -30,8 +30,11 @@ class DataManager:
     
     def __init__(self, data_file="data/data.json", session=None, current_block_id=None):
         self.data_file = data_file
+        self.widget_config_file = "data/widget_config.json"
         self.session = session
         self.current_block_id = current_block_id
+        self.widget_config = self._load_widget_config()
+        self.widget_handler = None  # Lazy load when needed
         
     def _log_function_call(self, function_name, inputs, outputs, metadata=None):
         """Unified telemetry logging for function calls"""
@@ -59,6 +62,82 @@ class DataManager:
         """STAGE 2: Track actual execution (vs Stage 1 LLM requests in Agent)"""
         if self.session and self.current_block_id:
             self.session.add_action_to_block(self.current_block_id, function_name, args, result)
+    
+    def _load_widget_config(self):
+        """Load widget configuration (hidden from LLM)"""
+        try:
+            with open(self.widget_config_file, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {"widget_fields": {}}
+        except Exception as e:
+            print(f"   ⚠️ Warning: Could not load widget config: {e}")
+            return {"widget_fields": {}}
+    
+    def _is_widget_field(self, field):
+        """Check if field has widget UI enabled"""
+        field_lower = field.lower()
+        widget_fields = self.widget_config.get("widget_fields", {})
+        return field_lower in widget_fields and widget_fields[field_lower].get("enabled", False)
+    
+    def _handle_widget_question(self, field, message):
+        """Handle widget-enabled field question with UI display and auto-update"""
+        # Log initial ask_question for telemetry
+        self._log_function_call("ask_question", 
+                               {"field": field, "message": message}, 
+                               {"widget_detected": True}, 
+                               {"success": True, "widget": True})
+        
+        # STAGE 2 TRACKING: Record widget ask
+        self._add_to_session("ask_question", {"field": field, "message": message}, 
+                           f"[WIDGET_TRIGGERED] {field}: {message}")
+        
+        try:
+            # Initialize widget handler if needed (lazy loading)
+            if not self.widget_handler:
+                from ui.widget_handler import WidgetHandler
+                self.widget_handler = WidgetHandler()
+            
+            # Get widget configuration for this field
+            widget_config = self.widget_config["widget_fields"][field]
+            
+            # Create widget question structure
+            widget_question = {
+                "question_text": message,
+                "field": field,
+                "options": widget_config.get("options", []),
+                "type": widget_config.get("type", "select")
+            }
+            
+            # Show widget UI and get user selection (ACTUAL VALUE, not number)
+            selected_value = self.widget_handler.show_widget_interface(widget_question)
+            
+            if selected_value:
+                # Automatically update data with selected value
+                update_result = self.update_data(field, selected_value)
+                
+                # STAGE 2 TRACKING: Record widget completion
+                self._add_to_session("widget_complete", 
+                                   {"field": field, "selected_value": selected_value}, 
+                                   f"[WIDGET_COMPLETED] {field}: {selected_value}")
+                
+                # Return result that shows user ALREADY PROVIDED the answer via widget
+                # This makes LLM think user answered the question, not that we're still asking
+                return f"[USER_ANSWERED] {field}: User selected {selected_value} via interactive widget. {field.capitalize()} has been updated."
+            else:
+                # Widget was cancelled or failed
+                return f"{message}\n❌ Widget selection cancelled"
+                
+        except Exception as e:
+            # Fallback to normal question if widget fails
+            error_msg = f"Widget error: {e}"
+            self._log_function_call("ask_question", 
+                                   {"field": field, "message": message}, 
+                                   {"widget_error": error_msg}, 
+                                   {"success": False, "widget": True})
+            
+            # Fall back to normal asking behavior
+            return f"[ASKING] {field}: {message} (widget unavailable)"
         
     def load_data(self):
         """Load data from JSON file"""
@@ -187,6 +266,12 @@ class DataManager:
         
         # Use the actual lowercase field name from data
         actual_field = field.lower()
+        
+        # WIDGET DETECTION: Check if this field requires widget UI
+        if self._is_widget_field(actual_field):
+            return self._handle_widget_question(actual_field, message)
+        
+        # Normal non-widget flow
         result = f"[ASKING] {actual_field}: {message}"
         
         self._log_function_call("ask_question", 

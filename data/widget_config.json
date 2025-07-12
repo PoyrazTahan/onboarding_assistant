@@ -1,0 +1,13 @@
+{
+  "widget_fields": {
+    "weight": {
+      "enabled": true,
+      "question_text": "What is your weight?",
+      "options": ["50kg", "55kg", "60kg", "65kg", "70kg", "75kg", "80kg", "85kg", "90kg", "95kg", "100kg"],
+      "type": "select",
+      "description": "User selects from predefined weight options"
+    }
+  },
+  "config_version": "1.0",
+  "last_updated": "2025-07-11"
+}

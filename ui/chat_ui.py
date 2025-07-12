@@ -78,22 +78,36 @@ def get_user_input():
     print("\033[F\033[K", end="")  # Move cursor up and clear line
     return user_input
 
-def print_widget_interface():
-    """Print centered widget interface separator"""
-    width = get_terminal_width()
-    separator = "<<<<<< WIDGET >>>>>>"
+def print_widget_box(question_text, options, selected_option=None):
+    """Print entire widget content in a nice box"""
     print()
-    print("=" * width)
-    print(separator.center(width))
-    print("=" * width)
+    print("    ┌─────────────────────────────────────────┐")
+    print("    │              🎛️  WIDGET UI              │")
+    print("    ├─────────────────────────────────────────┤")
+    print(f"    │ 📝 {question_text:<34} │")
+    print("    │                                         │")
+    print("    │ Seçenekler:                             │")
+    
+    for i, option in enumerate(options, 1):
+        if selected_option and option == selected_option:
+            print(f"    │ {i:2}) {option:<32} ✅ │")
+        else:
+            print(f"    │ {i:2}) {option:<34} │")
+    
+    print("    │                                         │")
+    print("    └─────────────────────────────────────────┘")
+    
+    if selected_option:
+        print(f"    ✅ Seçiminiz: {selected_option}")
+        print()
+
+def print_widget_interface():
+    """Print widget interface header - kept for compatibility"""
+    pass  # This will be replaced by print_widget_box
 
 def print_widget_completed():
     """Print widget completion message"""
-    width = get_terminal_width()
-    separator = "<<<<<< WIDGET TAMAMLANDI >>>>>>"
-    print("=" * width)
-    print(separator.center(width))
-    print("=" * width)
+    pass  # This will be handled by print_widget_box with selected_option
 
 def print_thinking_indicator():
     """Print thinking indicator for agent processing"""
