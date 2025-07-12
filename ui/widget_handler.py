@@ -1,17 +1,22 @@
 import json
 import random
+import sys
 from datetime import datetime
 from typing import Optional, Dict, List
 from semantic_kernel.functions import kernel_function
+
+# Test mode detection - can be overridden for Jupyter usage
+# For Jupyter: import ui.widget_handler; ui.widget_handler.TEST_MODE = True
+TEST_MODE = "--test" in sys.argv
 
 class WidgetHandler:
     """Handles widget interactions for immutable fields"""
     
     def __init__(self, user_id: str = "user"):
         self.user_id = user_id
-        self.base_path = f"/Users/dogapoyraztahan/_repos/heltia/onboarding_assistant/data/{user_id}"
+        self.base_path = f"../data/{user_id}"
         self.user_data_path = f"{self.base_path}/user_data.json"
-        self.questions_path = "/Users/dogapoyraztahan/_repos/heltia/onboarding_assistant/data/questions.json"
+        self.questions_path = "./data/questions.json"
     
     def _load_json(self, file_path: str) -> Dict:
         """Load JSON file safely"""
@@ -79,7 +84,29 @@ class WidgetHandler:
         # Show widget box with all options
         print_widget_box(question_text, options)
         
-        # Get user input
+        # TEST MODE: Automated selection
+        if TEST_MODE:
+            with open("data/test.json", 'r') as f:
+                test_data = json.load(f)
+            
+            field = question.get('field', '').lower()
+            expected_value = test_data.get(field)
+            
+            # Try exact match first
+            if expected_value in options:
+                selected_option = expected_value
+                option_number = options.index(expected_value) + 1
+                print(f"    🤖 TEST MODE: Auto-selecting option {option_number}: '{selected_option}'")
+            else:
+                # Treat test value as option number (1-based)
+                option_number = int(expected_value)
+                selected_option = options[option_number - 1]
+                print(f"    🤖 TEST MODE: Auto-selecting option {option_number}: '{selected_option}'")
+            
+            print_widget_box(question_text, options, selected_option)
+            return selected_option
+        
+        # INTERACTIVE MODE: Get user input
         while True:
             try:
                 user_input = input("    Seçiminizi yapın (sadece rakam): ").strip()
@@ -96,13 +123,12 @@ class WidgetHandler:
             except ValueError:
                 print("    ❌ Lütfen sadece rakam girin")
             except (KeyboardInterrupt, EOFError):
-                print("\n    ❌ Widget iptal edildi (test mode)")
-                # Return actual option text instead of just "1"
+                print("\n    ❌ Widget iptal edildi")
                 if options:
                     selected_option = options[0]
                     print_widget_box(question_text, options, selected_option)
                     return selected_option
-                return "1"
+                return None
     
     
     

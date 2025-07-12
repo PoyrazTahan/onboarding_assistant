@@ -62,6 +62,8 @@ class DataManager:
         """STAGE 2: Track actual execution (vs Stage 1 LLM requests in Agent)"""
         if self.session and self.current_block_id:
             self.session.add_action_to_block(self.current_block_id, function_name, args, result)
+            # Also notify stage manager for real-time tracking
+            self.session.stage_manager.on_function_call(function_name, args, result)
     
     def _load_widget_config(self):
         """Load widget configuration (hidden from LLM)"""
@@ -184,16 +186,8 @@ class DataManager:
     )
     def update_data(
         self,
-        field: str = InputVariable(
-            name="field",
-            description="Field name to update (must be: age, weight, or height) field type is case insensitive",
-            is_required=True
-        ),
-        value: str = InputVariable(
-            name="value", 
-            description="New value to set (numbers for age/height)",
-            is_required=True
-        )
+        field: str,
+        value: str
     ) -> str:
         data = self.load_data()
         
@@ -246,17 +240,12 @@ class DataManager:
     )
     def ask_question(
         self,
-        field: str = InputVariable(
-            name="field",
-            description="Field name to ask about (age, weight, or height), field type is case insensitive",
-            is_required=True
-        ),
-        message: str = InputVariable(
-            name="message",
-            description="Custom message to display to user",
-            is_required=True
-        )
+        field: str,
+        message: str
     ) -> str:
+        # Convert InputVariable to string if needed
+        field = str(field) if hasattr(field, '__str__') else field
+        message = str(message) if hasattr(message, '__str__') else message 
         data = self.load_data()
         
         # Simple field validation (normalize to lowercase for comparison)

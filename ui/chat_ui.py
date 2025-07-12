@@ -82,9 +82,9 @@ def print_widget_box(question_text, options, selected_option=None):
     """Print entire widget content in a nice box"""
     print()
     print("    ┌─────────────────────────────────────────┐")
-    print("    │              🎛️  WIDGET UI              │")
+    print("    │              🎛️  WIDGET UI               │")
     print("    ├─────────────────────────────────────────┤")
-    print(f"    │ 📝 {question_text:<34} │")
+    print(f"    │ 📝 {question_text:<34}   │")
     print("    │                                         │")
     print("    │ Seçenekler:                             │")
     
@@ -92,7 +92,7 @@ def print_widget_box(question_text, options, selected_option=None):
         if selected_option and option == selected_option:
             print(f"    │ {i:2}) {option:<32} ✅ │")
         else:
-            print(f"    │ {i:2}) {option:<34} │")
+            print(f"    │ {i:2}) {option:<34}  │")
     
     print("    │                                         │")
     print("    └─────────────────────────────────────────┘")
@@ -119,92 +119,4 @@ def clear_thinking_indicator():
     print("\033[F\033[K", end="")  # Move cursor up and clear line
 
 
-class ConversationHandler:
-    """Handles conversation flow with nice UI formatting"""
-    
-    def __init__(self, agent):
-        self.agent = agent
-        # Clear contract - only use these specific methods from agent
-        self._process_input = agent.process_user_input
-        self._is_complete = agent.is_conversation_complete
-        self._get_greeting = agent.handle_initial_greeting
-        
-    async def run_test_mode(self, test_inputs):
-        """Run conversation with predefined test inputs"""
-        print_system_message("🧪 Running in TEST MODE")
-        
-        # Handle initial greeting
-        greeting = self._get_greeting()
-        if greeting:
-            print_agent_message(greeting)
-        
-        # Process each test input
-        for i, user_input in enumerate(test_inputs):
-            print_user_message(user_input)
-            
-            # Process input through agent
-            response = await self._process_input(user_input, turn_number=i)
-            print_agent_message(response)
-            
-            # Check if conversation is complete
-            if self._is_complete():
-                print_system_message("✅ All data collected! Conversation complete.")
-                break
-    
-    async def run_interactive_mode(self):
-        """Run interactive conversation with user input"""
-        print_welcome()
-        
-        # Handle initial greeting
-        greeting = self._get_greeting()
-        if greeting:
-            print_agent_message(greeting)
-        
-        turn_number = 0
-        while not self._is_complete():
-            try:
-                # Get user input
-                user_input = get_user_input()
-                
-                # Handle exit commands
-                if user_input.lower() in ['quit', 'exit', 'çıkış']:
-                    print_system_message("👋 Görüşürüz!")
-                    break
-                
-                # Skip empty inputs
-                if not user_input.strip():
-                    continue
-                
-                # Display user message
-                print_user_message(user_input)
-                
-                # Show thinking indicator
-                print_thinking_indicator()
-                
-                # Process input through agent
-                response = await self._process_input(user_input, turn_number=turn_number)
-                
-                # Clear thinking indicator and show response
-                clear_thinking_indicator()
-                print_agent_message(response)
-                
-                turn_number += 1
-                
-            except KeyboardInterrupt:
-                print_system_message("\n👋 Görüşürüz!")
-                break
-            except Exception as e:
-                print_system_message(f"❌ Hata: {e}")
-                continue
-        
-        # Final completion message if conversation finished naturally
-        if self._is_complete():
-            print_system_message("✅ Tüm bilgiler toplandı! Konuşma tamamlandı.")
-    
-    async def run_conversation(self, test_mode=False, test_inputs=None):
-        """Main conversation orchestrator"""
-        if test_mode and test_inputs:
-            await self.run_test_mode(test_inputs)
-        else:
-            await self.run_interactive_mode()
 

@@ -16,6 +16,7 @@ class Session:
         self.session_start_state = {}
         self.session_end_state = {}
         self.created_at = datetime.datetime.now().isoformat()
+        self.stage_manager = ConversationStageManager()
         
     def add_programmatic_block(self, content, block_type="greeting"):
         """Add a programmatic entry (greeting, system message, etc)"""
@@ -231,3 +232,93 @@ class Session:
         session.session_end_state = data.get('session_end_state', {})
         
         return session
+
+
+class ConversationStageManager:
+    """Manages conversation stages with real-time function call tracking"""
+    
+    def __init__(self):
+        # Core stage tracking (always active)
+        self.current_stage = "initial"
+        self.last_question_field = None
+        self.question_history = []
+        self.function_call_log = []
+        
+        # Test automation (only active in test mode)
+        self.test_mode = False
+        self.test_data = {}
+        self.pending_test_response = None
+        
+    def enable_test_mode(self, test_data_file="data/test.json"):
+        """Enable test mode and load test responses"""
+        self.test_mode = True
+        try:
+            with open(test_data_file, 'r') as f:
+                self.test_data = json.load(f)
+                print(f"    📋 Stage Manager: Loaded test data from {test_data_file}")
+        except Exception as e:
+            print(f"    ⚠️ Stage Manager: Error loading test data: {e}")
+            self.test_mode = False
+    
+    def on_function_call(self, function_name, arguments, result):
+        """Hook called when any kernel function is executed (like telemetry)"""
+        # print(f"🔧 STAGE MANAGER HOOK: {function_name} called with {arguments}")
+        # Always track function calls for stage management
+        call_info = {
+            'function': function_name,
+            'arguments': arguments,
+            'result': result,
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+        self.function_call_log.append(call_info)
+        
+        # Handle ask_question specifically
+        if function_name == 'ask_question':
+            field = arguments.get('field', '').lower()
+            message = arguments.get('message', '')
+            
+            # Always track the question
+            self.last_question_field = field
+            self.question_history.append({
+                'field': field,
+                'message': message,
+                'timestamp': call_info['timestamp']
+            })
+            
+            # print(f"    📍 Stage Manager: Question detected for field '{field}'")
+            
+            # If in test mode, prepare automated response
+            if self.test_mode and field in self.test_data:
+                test_response = self.test_data[field]
+                self.pending_test_response = test_response
+                # print(f"    🎯 Stage Manager: Prepared test response: '{test_response}'")
+        
+        # Handle update_data to track completion
+        elif function_name == 'update_data':
+            field = arguments.get('field', '').lower()
+            value = arguments.get('value', '')
+            final_value = arguments.get('final_value', value)  # In case of type conversion
+            print(f"    ✅ Stage Manager: Data updated - {field}: {final_value}")
+            
+            # Track update completion for stage management
+            if self.last_question_field == field:
+                print(f"    🎯 Stage Manager: Question '{field}' completed with update")
+                self.current_stage = "data_updated"
+    
+    def get_pending_test_response(self):
+        """Get and clear pending test response"""
+        if self.pending_test_response:
+            response = self.pending_test_response
+            self.pending_test_response = None
+            return response
+        return None
+    
+    def get_stage_summary(self):
+        """Get current stage information for debugging"""
+        return {
+            'current_stage': self.current_stage,
+            'last_question_field': self.last_question_field,
+            'questions_asked': len(self.question_history),
+            'function_calls': len(self.function_call_log),
+            'test_mode': self.test_mode
+        }
