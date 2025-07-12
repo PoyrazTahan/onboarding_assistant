@@ -1,4 +1,3 @@
 Update Todo
 ☐ Turn testing with widget capabilities to run multiple tests at once with configurable input from test.json
 ☐ Change test.json in a way that we can provide the actual expected result as well and does automatic evaluation as well
-☐ check if there is a need of update in telemetry with the widget flag pending architecture. Also it would be able to handle multiple widgets per session making sure after the widget is simulated or user inputted the pending state goes back to false
