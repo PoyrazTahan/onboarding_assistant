@@ -15,6 +15,7 @@ import sys
 # Check for debug and test flags FIRST
 DEBUG_MODE = "--debug" in sys.argv
 TEST_MODE = "--test" in sys.argv
+CORE_AGENT_MODE = "--core-agent" in sys.argv
 
 # Import telemetry BEFORE any SK imports to capture everything
 from monitoring.telemetry import telemetry
@@ -26,6 +27,7 @@ if DEBUG_MODE:
 
 # Now import agent and UI functions
 from core.agent import Agent
+from core.turkish_persona_agent import TurkishPersonaAgent
 from ui.chat_ui import (print_system_message, print_agent_message, print_user_message, 
                        print_welcome, get_user_input, print_thinking_indicator, 
                        clear_thinking_indicator)
@@ -38,9 +40,35 @@ class ConversationHandler:
     
     def __init__(self, agent):
         self.agent = agent
+        self.turkish_agent = None  # Lazy load
         self._process_input = agent.process_user_input
         self._is_complete = agent.is_conversation_complete
         self._get_greeting = agent.handle_initial_greeting
+    
+    async def _display_agent_message(self, english_response):
+        """Route through Turkish agent or show raw response based on flags"""
+        if not english_response or not english_response.strip():
+            return
+        
+        # Core agent mode - bypass Turkish agent for debugging
+        if CORE_AGENT_MODE:
+            print_agent_message(english_response)
+            return
+        
+        # Lazy load Turkish agent
+        if self.turkish_agent is None:
+            self.turkish_agent = TurkishPersonaAgent()
+            await self.turkish_agent.initialize()
+        
+        # Get session context
+        session = self.agent.get_session()
+        
+        # Process with context and get multiple messages
+        turkish_messages = await self.turkish_agent.translate_to_persona(english_response, session)
+        
+        # Display each message separately (simulating WhatsApp conversation)
+        for message in turkish_messages:
+            print_agent_message(message)
     
     def _execute_widget_and_get_user_input(self, widget_info):
         """Execute widget and return what should be the next user input"""
@@ -90,7 +118,7 @@ class ConversationHandler:
         # Handle initial greeting
         greeting = self._get_greeting()
         if greeting:
-            print_agent_message(greeting)
+            await self._display_agent_message(greeting)
         
         # Start with initial greeting response
         user_input = "Hello, I need help filling out my data."
@@ -102,7 +130,7 @@ class ConversationHandler:
             # Process input through agent (function call hooks trigger during this)
             response = await self._process_input(user_input, turn_number=turn_number)
             # print(f"🔍 DEBUG: Full AI response: '{response}'")
-            print_agent_message(response)
+            await self._display_agent_message(response)
             
             # Check if conversation is complete
             if self._is_complete():
@@ -140,7 +168,7 @@ class ConversationHandler:
         # Handle initial greeting
         greeting = self._get_greeting()
         if greeting:
-            print_agent_message(greeting)
+            await self._display_agent_message(greeting)
         
         turn_number = 0
         while not self._is_complete():
@@ -168,7 +196,7 @@ class ConversationHandler:
                 
                 # Clear thinking indicator and show response
                 clear_thinking_indicator()
-                print_agent_message(response)
+                await self._display_agent_message(response)
                 
                 # Check for pending widget after LLM response
                 session = self.agent.get_session()
@@ -185,7 +213,7 @@ class ConversationHandler:
                         # Process widget selection as user input in next block
                         next_response = await self._process_input(selected_value, turn_number=turn_number+1)
                         clear_thinking_indicator()
-                        print_agent_message(next_response)
+                        await self._display_agent_message(next_response)
                         turn_number += 1  # Extra increment for widget turn
                 
                 turn_number += 1
@@ -212,7 +240,19 @@ class ConversationHandler:
 async def main():
     """Main CLI application function"""
     
-    print("🧪 Testing Simple Data Collection Agent...")
+    # Show mode indicators
+    mode_flags = []
+    if TEST_MODE: mode_flags.append("TEST")
+    if DEBUG_MODE: mode_flags.append("DEBUG") 
+    if CORE_AGENT_MODE: mode_flags.append("CORE-AGENT")
+    
+    mode_str = f" ({' + '.join(mode_flags)})" if mode_flags else ""
+    print(f"🧪 Data Collection Agent{mode_str}")
+    
+    if CORE_AGENT_MODE:
+        print("⚙️ Core Agent Mode: Raw English responses with function calls")
+    elif not TEST_MODE:
+        print("🇹🇷 Turkish Persona Mode: Empathetic Turkish responses")
     
     # Initialize agent
     agent = Agent(debug_mode=DEBUG_MODE)

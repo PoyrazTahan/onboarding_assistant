@@ -1,1 +1,1 @@
-Can I ask you a few more questions to understand you better?
+INSTRUCTION TO NORA: This is a RETURNING USER - we already have some of their health data. Welcome them back warmly and ask if you can continue with a few more questions to complete their profile. This is just a greeting - no specific data collection yet.
