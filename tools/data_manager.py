@@ -194,8 +194,9 @@ class DataManager:
             try:
                 data[actual_field] = int(value)
             except ValueError:
+                additional_info = ' in centimeters which you should convert' if actual_field == "height" else ''
                 return self._handle_error("type_conversion", field, value,
-                                        f"Error: {actual_field} must be a number, got '{value}'")
+                                        f"Error: {actual_field} must be a number{additional_info}, got '{value}' ")
         else:
             data[actual_field] = value
         

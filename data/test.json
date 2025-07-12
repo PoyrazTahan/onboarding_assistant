@@ -1,5 +1,54 @@
 {
-  "age": "I'm 25 years old",
-  "weight": "4",
-  "height": "I'm 170cm tall"
+  "test_scenarios": [
+    {
+      "name": "Fresh User",
+      "inputs": {
+        "age": "25",
+        "weight": "4",
+        "height": "175"
+      },
+      "expected_result": {
+        "age": 25,
+        "weight": "65kg",
+        "height": 175
+      }
+    },
+    {
+      "name": "Returning User Widget",
+      "existing_data": {
+        "age": 30,
+        "weight": null,
+        "height": null
+      },
+      "inputs": {
+        "weight": "2",
+        "height": "168"
+      },
+      "expected_result": {
+        "age": 30,
+        "weight": "55kg",
+        "height": 168
+      }
+    },
+    {
+      "name": "Returning User Text",
+      "existing_data": {
+        "age": null,
+        "weight": "70kg",
+        "height": null
+      },
+      "inputs": {
+        "age": "I am 40 years old",
+        "height": "5 feet 8 inches"
+      },
+      "expected_result": {
+        "age": 40,
+        "weight": "70kg",
+        "height": 173
+      }
+    }
+  ],
+  "age": "I am 40 years old",
+  "weight": "2",
+  "height": "5 feet 8 inches"
 }

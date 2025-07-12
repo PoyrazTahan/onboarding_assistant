@@ -5,3 +5,4 @@ archive/
 .vscode/
 .claude
 .notes/
+.test_results/
