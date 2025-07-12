@@ -5,7 +5,6 @@ Processes conversation context and provides natural, multi-message responses
 """
 
 import sys
-import re
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 
@@ -153,70 +152,11 @@ class TurkishPersonaAgent:
         else:
             return "UNKNOWN"
     
-    def _get_data_status(self, session):
-        """Get current status of each data field"""
-        if not session:
-            return "NEEDED", "NEEDED", "NEEDED"
-        
-        # Get current data state from most recent session data
-        age_status = "NEEDED"
-        weight_status = "NEEDED" 
-        height_status = "NEEDED"
-        
-        # Check latest data state from session blocks
-        for block in reversed(session.blocks):
-            if block['type'] == 'ai_interaction' and block['context'].get('data_state_snapshot'):
-                data_snapshot = block['context']['data_state_snapshot']
-                
-                age_status = "COMPLETED" if data_snapshot.get('age') is not None else "NEEDED"
-                weight_status = "COMPLETED" if data_snapshot.get('weight') is not None else "NEEDED"
-                height_status = "COMPLETED" if data_snapshot.get('height') is not None else "NEEDED"
-                break
-        
-        return age_status, weight_status, height_status
-    
     def _parse_xml_response(self, turkish_response):
         """Parse XML ChatBox responses into list of messages"""
         try:
-            # Remove markdown code blocks if present
-            cleaned_response = turkish_response
-            if '```xml' in cleaned_response:
-                # Extract content between ```xml and ```
-                start = cleaned_response.find('```xml') + 6
-                end = cleaned_response.find('```', start)
-                if end != -1:
-                    cleaned_response = cleaned_response[start:end].strip()
-            
-            # Try multiple XML tag patterns
-            patterns = [
-                r'<ChatBox>(.*?)</ChatBox>',
-                r'<message>(.*?)</message>',
-                r'<mesaj>(.*?)</mesaj>',
-                r'<text>(.*?)</text>'
-            ]
-            
-            messages = []
-            for pattern in patterns:
-                matches = re.findall(pattern, cleaned_response, re.DOTALL | re.IGNORECASE)
-                if matches:
-                    for match in matches:
-                        clean_message = match.strip()
-                        if clean_message:
-                            messages.append(clean_message)
-                    break
-            
-            if not messages:
-                # Fallback - try to extract any text content without XML/HTML
-                clean_text = re.sub(r'<[^>]*>', '', cleaned_response).strip()
-                # Remove any remaining HTML entities
-                clean_text = clean_text.replace('&nbsp;', ' ').replace('&amp;', '&')
-                if clean_text:
-                    return [clean_text]
-                else:
-                    return [turkish_response.strip()]
-            
-            return messages
-            
+            from utils.xml_parser import extract_xml_tags, CHATBOX_PATTERNS
+            return extract_xml_tags(turkish_response, CHATBOX_PATTERNS)
         except Exception as e:
             if DEBUG_MODE:
                 print(f"⚠️ XML parsing failed: {e}")
@@ -238,24 +178,19 @@ class TurkishPersonaAgent:
             conversation_context = self._extract_conversation_context(session)
             last_action_result = self._determine_last_action_result(session)
             next_question = self._extract_next_question(english_response)
-            
-            # Determine instruction type and get data status
             instruction_type = self._determine_instruction_type(english_response)
-            age_status, weight_status, height_status = self._get_data_status(session)
             
-            # Build full prompt with new architecture
+            # Get current data status using same format as core agent
+            from tools.data_manager import DataManager
+            data_manager = DataManager()
+            current_data_status = data_manager.get_data_status()
+            
+            # Build prompt with all context
             full_prompt = self.prompt_template.replace("{{CONVERSATION_CONTEXT}}", conversation_context)
             full_prompt = full_prompt.replace("{{LAST_ACTION_RESULT}}", last_action_result)
             full_prompt = full_prompt.replace("{{NEXT_QUESTION}}", next_question)
             full_prompt = full_prompt.replace("{{INSTRUCTION_TYPE}}", instruction_type)
-            full_prompt = full_prompt.replace("{{AGE_STATUS}}", age_status)
-            full_prompt = full_prompt.replace("{{WEIGHT_STATUS}}", weight_status)
-            full_prompt = full_prompt.replace("{{HEIGHT_STATUS}}", height_status)
-            
-            if DEBUG_MODE:
-                print(f"🇹🇷 DEBUG - InstructionType:{instruction_type} DataStatus:age={age_status},weight={weight_status},height={height_status}")
-                print(f"🇹🇷 DEBUG - CoreAgentSaid: {next_question[:50]}...")
-                print(f"🇹🇷 DEBUG - ConversationContext: {conversation_context[:100]}...")
+            full_prompt = full_prompt.replace("{{CURRENT_DATA_STATUS}}", current_data_status)
             
             # Invoke Turkish persona
             result = await self.kernel.invoke_prompt(
@@ -290,32 +225,9 @@ class TurkishPersonaAgent:
             print(f"❌ {error_msg}")
             raise RuntimeError(error_msg)
     
-    async def translate_to_persona(self, english_response, session=None):
-        """Main interface - process with context if available, fallback to simple"""
-        if session:
-            messages = await self.process_with_context(english_response, session)
-            return messages
-        else:
-            # Fallback to simple translation
-            return await self._simple_translate(english_response)
-    
-    async def _simple_translate(self, english_response):
-        """Simple translation fallback for when no context available"""
-        simple_prompt = f"""Sen çok samimi, rahat, WhatsApp tarzında konuşan bir sağlık asistanısın. 
-Verilen İngilizce metni Türkçe'ye çevir ama:
-- Çok samimi ve rahat ol
-- WhatsApp mesajı gibi kısa ve öz ol  
-- Emoji kullan ama abartma
-- "Sen" diye hitap et
-
-İngilizce metin: "{english_response}"
-
-Türkçe çeviri:"""
-
-        result = await self.kernel.invoke_prompt(
-            function_name="simple_translate",
-            plugin_name="turkish_persona", 
-            prompt=simple_prompt
-        )
+    async def translate_to_persona(self, english_response, session):
+        """Main interface - process with full conversation context"""
+        if not session:
+            raise ValueError("Turkish agent requires session context for proper operation")
         
-        return [str(result).strip()]
+        return await self.process_with_context(english_response, session)
