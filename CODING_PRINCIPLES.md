@@ -3,17 +3,20 @@
 ## Core Philosophy
 
 ### **Reduce Over-Engineering**
+
 - Keep functionality high while maintaining simplicity
 - Follow what is going on - code should be easy to trace and understand
 - Functionality first - never reduce features, only reduce complexity
 
 ### **Simplicity Guidelines**
+
 - **Avoid nested loops** - Keep control flow straightforward
 - **Minimize try-catch blocks** - Use them sparingly, prefer explicit checks
 - **Avoid complex data type definitions** - Keep data structures simple
 - **Keep things lean but functional** - Remove redundancy without losing capability
 
 ### **Development Approach**
+
 - **Fail fast in development** - Don't hide problems with fallbacks
 - **No silent failures** - If something is wrong, crash immediately with clear errors
 - **Future-proof design** - Don't hardcode values that might expand (like field names)
@@ -22,29 +25,36 @@
 ## Coding Style
 
 ### **Functions & Logic**
+
 - **Concise implementations** - Prefer direct, readable code over complex abstractions
 - **Unified error handling** - Consolidate repetitive error patterns into helper methods
 - **Single responsibility** - Each function should do one thing well
 - **Pythonic patterns** - Use list comprehensions, direct validation, EAFP principle
 
 ### **Comments & Documentation**
+
 - **Concise but informative** - Explain the "why" not the "what"
 - **Token-conscious** - Keep comments brief to avoid consuming too many tokens
 - **Architectural clarity** - Document important design decisions (like dual tracking)
 - **Future developer focused** - Comments should help someone understand intent quickly
 
 ### **Error Handling**
+
 - **Explicit validation** - Check conditions directly rather than catching exceptions for control flow
 - **Clear error messages** - Tell exactly what went wrong and what was expected
 - **No redundant fallbacks** - If a core file/dependency is missing, fail immediately
 
 ### **Code Organization**
+
 - **Helper methods for repetition** - Extract common patterns into reusable functions
 - **Logical grouping** - Related functionality should be co-located
 - **Consistent patterns** - Once you establish a pattern, follow it throughout
 - **Avoid duplication** - Unless it serves different purposes (like dual tracking)
+- **Code separation of concerns** - UI display, business logic, and orchestration should be in separate files
+- **File responsibility clarity** - Each file should have one clear purpose (e.g., `chat_ui.py` for display only, not input handling)
 
 ### **Telemetry & Debugging**
+
 - **Comprehensive but clean** - Capture everything needed but don't clutter the main logic
 - **Unified logging patterns** - Consistent structure across all logging
 - **Observability matters** - Track both requests and actual execution for full picture
@@ -67,12 +77,15 @@ I follow these design principles:
 ## Key Examples from This Codebase
 
 ### **Dual Tracking Architecture**
+
 We implement two-stage function call tracking:
+
 - **Stage 1 (Agent)**: Track what LLM requests
 - **Stage 2 (DataManager)**: Track what actually executes
 - **Purpose**: Debug LLM behavior vs execution failures vs routing issues
 
 ### **Fail-Fast Template Loading**
+
 ```python
 # GOOD - Fail immediately with clear error
 with open(filepath, 'r') as f:
@@ -87,17 +100,20 @@ except FileNotFoundError:
 ```
 
 ### **Unified Helper Methods**
+
 Extract repetitive patterns:
+
 ```python
 def _handle_error(self, error_type, field, value, message):
     """Unified error handling with logging"""
     print(f"   ❌ {message}")
-    self._log_function_call("function_name", inputs, {"result": message}, 
+    self._log_function_call("function_name", inputs, {"result": message},
                            {"success": False, "error_type": error_type})
     return message
 ```
 
 ### **Concise Data Processing**
+
 ```python
 # GOOD - List comprehension with clear intent
 recorded_section = [

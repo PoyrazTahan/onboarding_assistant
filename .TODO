@@ -1,0 +1,3 @@
+Update Todo
+☐ Turn testing with widget capabilities to run multiple tests at once with configurable input from test.json
+☐ Future enhancement - instead of sequential responses, intercept ask_question() calls to supply correct field response based on the 'field' parameter the LLM is actually requesting
