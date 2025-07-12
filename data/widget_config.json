@@ -1,13 +1,198 @@
 {
   "widget_fields": {
-    "weight": {
+    "gender": {
       "enabled": true,
-      "question_text": "What is your weight?",
-      "options": ["50kg", "55kg", "60kg", "65kg"],
+      "question_text": "What is your gender?",
+      "question_text_tr": "Cinsiyetiniz nedir?",
+      "options": [
+        { "value": "Male", "display_tr": "Erkek" },
+        { "value": "Female", "display_tr": "Kadın" },
+        { "value": "Prefer not to say", "display_tr": "Belirtmek istemiyorum" },
+        { "value": "Other", "display_tr": "Diğer" }
+      ],
       "type": "select",
-      "description": "User selects from predefined weight options"
+      "description": "User selects their gender"
+    },
+    "has_children": {
+      "enabled": true,
+      "question_text": "Do you have children?",
+      "question_text_tr": "Çocuğunuz var mı?",
+      "options": [
+        { "value": "No", "display_tr": "Hayır" },
+        { "value": "Yes", "display_tr": "Evet" },
+        { "value": "Pregnant", "display_tr": "Hamileyim" }
+      ],
+      "type": "select",
+      "description": "User indicates if they have children"
+    },
+    "sleep_quality": {
+      "enabled": true,
+      "question_text": "How frequetnly Do you wake up feeling fresh and rested in the mornings",
+      "question_text_tr": "Son iki hafta boyunca, sabahları kendimi taze ve dinlenmiş hissederek uyandım",
+      "options": [
+        { "value": "Never", "display_tr": "Hiçbir zaman" },
+        { "value": "Sometimes", "display_tr": "Bazen" },
+        {
+          "value": "Less than half the time",
+          "display_tr": "Geçen zamanın yarısından azında"
+        },
+        {
+          "value": "More than half the time",
+          "display_tr": "Geçen zamanın yarısından fazlasında"
+        },
+        { "value": "Most of the time", "display_tr": "Çoğu zaman" },
+        { "value": "Always", "display_tr": "Her zaman" }
+      ],
+      "type": "select",
+      "description": "User rates their sleep quality"
+    },
+    "stress_level": {
+      "enabled": true,
+      "question_text": "In the last two weeks, How much of the time you would consider yourself to be calm and relaxed",
+      "question_text_tr": "Son iki hafta boyunca, kendimi sakin ve gevşemiş hissettim",
+      "options": [
+        { "value": "Never", "display_tr": "Hiçbir zaman" },
+        { "value": "Sometimes", "display_tr": "Bazen" },
+        {
+          "value": "Less than half the time",
+          "display_tr": "Geçen zamanın yarısından azında"
+        },
+        {
+          "value": "More than half the time",
+          "display_tr": "Geçen zamanın yarısından fazlasında"
+        },
+        { "value": "Most of the time", "display_tr": "Çoğu zaman" },
+        { "value": "Always", "display_tr": "Her zaman" }
+      ],
+      "type": "select",
+      "description": "User rates their stress level"
+    },
+    "mood_level": {
+      "enabled": true,
+      "question_text": "In the last two weeks, How much of the time you would consider yourself to be cheerful and happy",
+      "question_text_tr": "Son iki hafta boyunca, kendimi neşeli ve keyifli hissettim",
+      "options": [
+        { "value": "Never", "display_tr": "Hiçbir zaman" },
+        { "value": "Sometimes", "display_tr": "Bazen" },
+        {
+          "value": "Less than half the time",
+          "display_tr": "Geçen zamanın yarısından azında"
+        },
+        {
+          "value": "More than half the time",
+          "display_tr": "Geçen zamanın yarısından fazlasında"
+        },
+        { "value": "Most of the time", "display_tr": "Çoğu zaman" },
+        { "value": "Always", "display_tr": "Her zaman" }
+      ],
+      "type": "select",
+      "description": "User rates their mood level"
+    },
+    "activity_level": {
+      "enabled": true,
+      "question_text": "How frequently do you do physical activity?",
+      "question_text_tr": "Gün boyunca toplam fiziksel aktivite düzeyinizi hangisi en iyi tanımlar?",
+      "options": [
+        {
+          "value": "Very low (mostly sitting or lying down)",
+          "display_tr": "Çok düşük (çoğunlukla oturuyor veya uzanıyorum)"
+        },
+        {
+          "value": "Low (short walks, occasionally standing)",
+          "display_tr": "Düşük (kısa mesafeleri yürüyor, ara sıra ayakta duruyorum)"
+        },
+        {
+          "value": "Moderate (daily regular walks or simple home exercises)",
+          "display_tr": "Orta (her gün düzenli yürüyüş veya basit ev egzersizleri yapıyorum)"
+        },
+        {
+          "value": "High (walking to work/school, using stairs, hobby sports)",
+          "display_tr": "Yüksek (işe-okula yürüyor, merdiven kullanıyor, hobi olarak spor yapıyorum)"
+        },
+        {
+          "value": "Very high (regular intense exercise or sports)",
+          "display_tr": "Çok yüksek (düzenli yoğun egzersiz veya spor yapıyorum)"
+        }
+      ],
+      "type": "select",
+      "description": "User selects their physical activity level"
+    },
+    "sugar_intake": {
+      "enabled": true,
+      "question_text": "What is your frequency of consuming sugary snacks or drinks in the past week?",
+      "question_text_tr": "Geçtiğimiz bir hafta içinde şekerli atıştırmalık veya içecekleri ne sıklıkla tükettiniz?",
+      "options": [
+        { "value": "Never", "display_tr": "Hiç" },
+        { "value": "1-2 days", "display_tr": "1-2 gün" },
+        { "value": "3-4 days", "display_tr": "3-4 gün" },
+        { "value": "5-6 days", "display_tr": "5-6 gün" },
+        { "value": "Every day", "display_tr": "Her gün" }
+      ],
+      "type": "select",
+      "description": "User rates their sugar consumption frequency"
+    },
+    "water_intake": {
+      "enabled": true,
+      "question_text": "What is your daily water intake?",
+      "question_text_tr": "Geçtiğimiz bir hafta içinde günlük ortalama ne kadar su içtiniz?",
+      "options": [
+        {
+          "value": "1-2 glasses (200-400 ml)",
+          "display_tr": "1-2 bardak (200-400 ml)"
+        },
+        {
+          "value": "3-4 glasses (600-800 ml)",
+          "display_tr": "3-4 bardak (600-800 ml)"
+        },
+        {
+          "value": "5-6 glasses (1000-1200 ml)",
+          "display_tr": "5-6 bardak (1000-1200 ml)"
+        },
+        {
+          "value": "7-8 glasses (1400-1600 ml)",
+          "display_tr": "7-8 bardak (1400-1600 ml)"
+        },
+        {
+          "value": "More than 8 glasses (+1600 ml)",
+          "display_tr": "8 bardaktan fazla (+1600 ml)"
+        }
+      ],
+      "type": "select",
+      "description": "User selects their daily water intake"
+    },
+    "smoking_status": {
+      "enabled": true,
+      "question_text": "Do you smoke?",
+      "question_text_tr": "Sigara kullanıyor musunuz?",
+      "options": [
+        { "value": "No", "display_tr": "Hayır" },
+        {
+          "value": "Social smoker (few days a week)",
+          "display_tr": "Sosyal içiciyim (haftada birkaç gün)"
+        },
+        { "value": "3-4 cigarettes per day", "display_tr": "Günde 3-4 tane" },
+        { "value": "Half pack per day", "display_tr": "Günde yarım paket" },
+        { "value": "1 pack per day", "display_tr": "Günde 1 paket" },
+        {
+          "value": "More than 1 pack per day",
+          "display_tr": "Günde 1 paketten fazla"
+        }
+      ],
+      "type": "select",
+      "description": "User indicates their smoking status"
+    },
+    "supplement_usage": {
+      "enabled": true,
+      "question_text": "Do you regularly use vitamin or mineral supplements?",
+      "question_text_tr": "Düzenli olarak bir vitamin veya mineral takviyesi kullanıyor musunuz?",
+      "options": [
+        { "value": "No", "display_tr": "Hayır" },
+        { "value": "Yes", "display_tr": "Evet" }
+      ],
+      "type": "select",
+      "description": "User indicates supplement usage"
     }
   },
-  "config_version": "1.0",
-  "last_updated": "2025-07-11"
+  "config_version": "2.0",
+  "last_updated": "2025-07-12"
 }

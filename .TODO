@@ -2,12 +2,11 @@
 
 ☐ Increase the number of data field to 13 with 3 free form entry and 10 widget entry this will make the testing longer and have quite bit log files but this is the end state
 ☐ Add action recommendation at the end of the information collection. This is the aim of the project. Regardless of the available information you go down the list and with all of the available information we give you things you might want to do, put a leave a smoke reminder, take a mammogram and such
-☐ Add a second agent that takes the final communication to user and turns them like a whatsapp chatting hip cool short and most importantly turkish. But we will create a persona and so on for that agent which will mainly take core Agent's output and communicate that to the user.
 
 ## SHORTENED
 
 ☐ Add health action recommendation system after data collection completion
-☐ Create Turkish persona agent for user-facing communication
 ☐ Expand data collection to 13 fields (3 free-form, 10 widget-based)
 
 ---
+ 

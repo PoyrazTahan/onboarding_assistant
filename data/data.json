@@ -1,5 +1,15 @@
 {
-  "age": 25,
-  "weight": "70kg",
-  "height": null
+  "age": null,
+  "weight": null,
+  "height": null,
+  "gender": null,
+  "has_children": null,
+  "sleep_quality": null,
+  "stress_level": null,
+  "mood_level": null,
+  "activity_level": null,
+  "sugar_intake": null,
+  "water_intake": null,
+  "smoking_status": null,
+  "supplement_usage": null
 }

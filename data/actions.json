@@ -1,0 +1,248 @@
+{
+  "recommendations": {
+    "reminders": [
+      {
+        "id": "weight_tracking",
+        "title": "Düzen ölçü takibi yapın",
+        "title_en": "Track your weight regularly",
+        "ai_notes": "Beden kitle indeksi (BMI) 25'in üzerindeyse önerilebilir.",
+        "ai_notes_en": "Recommended if Body Mass Index (BMI) is over 25.",
+        "conditions": {
+          "bmi_over_25": true
+        },
+        "category": "physical_health"
+      },
+      {
+        "id": "regular_checkup",
+        "title": "Düzenli check-up yaptırın",
+        "title_en": "Get regular check-ups",
+        "ai_notes": "Herkese kesinlikle önerilmeli.",
+        "ai_notes_en": "Should definitely be recommended to everyone.",
+        "conditions": {
+          "always_recommend": true
+        },
+        "category": "preventive_care"
+      },
+      {
+        "id": "mammography",
+        "title": "Düzenli mamografi yaptırın",
+        "title_en": "Get regular mammograms",
+        "ai_notes": "Sadece 40 yaş üstü kadın kullanıcılar için kesinlikle önerilmeli. Kullanıcı erkekse kesinlikle önerilmemeli.",
+        "ai_notes_en": "Should definitely be recommended only for female users over 40. Should never be recommended if user is male.",
+        "conditions": {
+          "gender": "Female",
+          "age_over": 40
+        },
+        "category": "preventive_care"
+      },
+      {
+        "id": "drink_water",
+        "title": "Günde 8 bardak su için",
+        "title_en": "Drink 8 glasses of water daily",
+        "ai_notes": "Günlük su tüketimi 8 bardaktan az olan kullanıcılara önerilmeli.",
+        "ai_notes_en": "Should be recommended to users who drink less than 8 glasses of water daily.",
+        "conditions": {
+          "water_intake_less_than": "7-8 glasses (1400-1600 ml)"
+        },
+        "category": "nutrition"
+      },
+      {
+        "id": "take_vitamins",
+        "title": "Vitaminlerinizi alın",
+        "title_en": "Take your vitamins",
+        "ai_notes": "Sadece vitamin kullandığını belirten kullanıcılara önerilmeli.",
+        "ai_notes_en": "Should only be recommended to users who indicated they use vitamins.",
+        "conditions": {
+          "supplement_usage": "Yes"
+        },
+        "category": "nutrition"
+      },
+      {
+        "id": "quit_smoking",
+        "title": "Sigarayı bırakın",
+        "title_en": "Quit smoking",
+        "ai_notes": "Sadece aktif sigara içen kullanıcılara önerilmeli. Hiç sigara içmeyen veya sosyal içici kullanıcılara önerilmemeli.",
+        "ai_notes_en": "Should only be recommended to active smokers. Should not be recommended to non-smokers or social smokers.",
+        "conditions": {
+          "smoking_status_not": ["No", "Social smoker (few days a week)"]
+        },
+        "category": "lifestyle"
+      },
+      {
+        "id": "get_sunlight",
+        "title": "Güneş ışığı alın",
+        "title_en": "Get sunlight exposure",
+        "ai_notes": "Uyku ve günlük neşeyle ilgili problem yaşayan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users experiencing sleep and daily mood problems.",
+        "conditions": {
+          "sleep_quality_low": ["Never", "Sometimes", "Less than half the time"],
+          "mood_level_low": ["Never", "Sometimes", "Less than half the time"]
+        },
+        "category": "mental_health"
+      },
+      {
+        "id": "healthy_eating",
+        "title": "Sağlıklı beslenin",
+        "title_en": "Eat healthy",
+        "ai_notes": "Eğer daha ilgili bir şey bulamazsan tamamlamak için herkese önerilebilir.",
+        "ai_notes_en": "Can be recommended to everyone as a fallback if no other specific recommendations apply.",
+        "conditions": {
+          "fallback_recommendation": true
+        },
+        "category": "nutrition"
+      },
+      {
+        "id": "pap_smear",
+        "title": "Düzenli smear yaptırın",
+        "title_en": "Get regular pap smears",
+        "ai_notes": "Kadın kullanıcılar için önerilmeli. Kullanıcı erkekse kesinlikle önerilmemeli.",
+        "ai_notes_en": "Should be recommended for female users. Should never be recommended if user is male.",
+        "conditions": {
+          "gender": "Female"
+        },
+        "category": "preventive_care"
+      },
+      {
+        "id": "sugar_free_day",
+        "title": "Şekersiz bir gün geçirin",
+        "title_en": "Have a sugar-free day",
+        "ai_notes": "Şeker tüketimi fazla olan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users with high sugar consumption.",
+        "conditions": {
+          "sugar_intake_high": ["5-6 days", "Every day"]
+        },
+        "category": "nutrition"
+      },
+      {
+        "id": "mindfulness_break",
+        "title": "1 dakikalık farkındalık molası verin",
+        "title_en": "Take a 1-minute mindfulness break",
+        "ai_notes": "Günlük stresi yüksek olan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users with high daily stress.",
+        "conditions": {
+          "stress_level_low": ["Never", "Sometimes", "Less than half the time"]
+        },
+        "category": "mental_health"
+      },
+      {
+        "id": "movement_break",
+        "title": "2 dakikalık hareket molası verin",
+        "title_en": "Take a 2-minute movement break",
+        "ai_notes": "Günlük hareket seviyesi düşük olan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users with low daily activity levels.",
+        "conditions": {
+          "activity_level_low": ["Very low (mostly sitting or lying down)", "Low (short walks, occasionally standing)"]
+        },
+        "category": "physical_health"
+      },
+      {
+        "id": "screen_curfew",
+        "title": "Uyumadan 1 saat önce ekrana veda edin",
+        "title_en": "Stop using screens 1 hour before sleep",
+        "ai_notes": "Uyku ile ilgili problem yaşayan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users experiencing sleep problems.",
+        "conditions": {
+          "sleep_quality_low": ["Never", "Sometimes", "Less than half the time"]
+        },
+        "category": "sleep_hygiene"
+      },
+      {
+        "id": "journaling",
+        "title": "Uyumadan düşüncelerinizi kağıda dökün",
+        "title_en": "Write down your thoughts before sleep",
+        "ai_notes": "Stres ve uyku ile ilgili problem yaşayan kullanıcılara önerilebilir.",
+        "ai_notes_en": "Can be recommended to users experiencing stress and sleep problems.",
+        "conditions": {
+          "stress_level_low": ["Never", "Sometimes", "Less than half the time"],
+          "sleep_quality_low": ["Never", "Sometimes", "Less than half the time"]
+        },
+        "category": "mental_health"
+      }
+    ],
+    "specialists": [
+      {
+        "id": "clinical_psychologist",
+        "title": "Klinik psikolog",
+        "title_en": "Clinical psychologist",
+        "ai_notes": "Mental sağlık alanında desteğe ihtiyacı veya hedefleri varsa öner.",
+        "ai_notes_en": "Recommend if they need support or have goals in mental health.",
+        "conditions": {
+          "mental_health_indicators": ["stress_level_low", "mood_level_low", "sleep_quality_low"]
+        },
+        "category": "mental_health"
+      },
+      {
+        "id": "dietitian",
+        "title": "Diyetisyen",
+        "title_en": "Dietitian",
+        "ai_notes": "Beslenme alanında desteğe ihtiyacı veya hedefleri varsa öner.",
+        "ai_notes_en": "Recommend if they need support or have goals in nutrition.",
+        "conditions": {
+          "nutrition_indicators": ["bmi_issues", "water_intake_low", "sugar_intake_high"]
+        },
+        "category": "nutrition"
+      },
+      {
+        "id": "child_development_specialist",
+        "title": "Çocuk gelişim uzmanı",
+        "title_en": "Child development specialist",
+        "ai_notes": "Çocuğu varsa ve bu konuda desteğe ihtiyacı varsa öner.",
+        "ai_notes_en": "Recommend if they have children and need support in this area.",
+        "conditions": {
+          "has_children": ["Yes"]
+        },
+        "category": "family_support"
+      },
+      {
+        "id": "family_counselor",
+        "title": "Aile danışmanı",
+        "title_en": "Family counselor",
+        "ai_notes": "Aile ile ilgili desteğe ihtiyacı varsa öner.",
+        "ai_notes_en": "Recommend if they need family-related support.",
+        "conditions": {
+          "family_support_needed": true
+        },
+        "category": "family_support"
+      },
+      {
+        "id": "personal_trainer",
+        "title": "Kişisel antrenör",
+        "title_en": "Personal trainer",
+        "ai_notes": "Spor ile ilgili destek ihtiyacı veya hedefleri varsa öner.",
+        "ai_notes_en": "Recommend if they need support or have goals related to sports/fitness.",
+        "conditions": {
+          "fitness_indicators": ["activity_level_low", "weight_management_needed"]
+        },
+        "category": "physical_health"
+      },
+      {
+        "id": "physiotherapist",
+        "title": "Fizyoterapist",
+        "title_en": "Physiotherapist",
+        "ai_notes": "Ağrı giderme veya fiziksel sağlıkla ilgili uygun hedefler varsa öner.",
+        "ai_notes_en": "Recommend if they have pain relief or appropriate physical health goals.",
+        "conditions": {
+          "physical_health_goals": true
+        },
+        "category": "physical_health"
+      },
+      {
+        "id": "doula",
+        "title": "Doula",
+        "title_en": "Doula",
+        "ai_notes": "Hamile olan kadınlara öner.",
+        "ai_notes_en": "Recommend to pregnant women.",
+        "conditions": {
+          "has_children": "Pregnant"
+        },
+        "category": "pregnancy_support"
+      }
+    ]
+  },
+  "config": {
+    "version": "1.0",
+    "last_updated": "2025-07-12",
+    "description": "Health action recommendations and specialist referrals based on user profile data",
+    "usage_note": "This file will be used for post-data-collection health recommendations. Currently not integrated into the main flow."
+  }
+}
