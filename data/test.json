@@ -9,16 +9,16 @@
         "age": "28",
         "weight": "72kg",
         "height": "175cm",
-        "gender": "2",
-        "has_children": "1",
-        "sleep_quality": "5",
+        "gender": "1",
+        "has_children": "0",
+        "sleep_quality": "3",
         "stress_level": "2",
-        "mood_level": "5",
+        "mood_level": "4",
         "activity_level": "2",
         "sugar_intake": "2",
-        "water_intake": "4",
-        "smoking_status": "1",
-        "supplement_usage": "2"
+        "water_intake": "3",
+        "smoking_status": "0",
+        "supplement_usage": "1"
       },
       "expected_result": {
         "age": 28,
@@ -26,12 +26,12 @@
         "height": 175.0,
         "gender": "Female",
         "has_children": "No",
-        "sleep_quality": "Most of the time",
+        "sleep_quality": "More than half the time",
         "stress_level": "Sometimes",
         "mood_level": "Most of the time",
         "activity_level": "Low (short walks, occasionally standing)",
         "sugar_intake": "1-2 days",
-        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "water_intake": "5-6 glasses (1000-1200 ml)",
         "smoking_status": "No",
         "supplement_usage": "Yes"
       }
@@ -49,13 +49,13 @@
       "inputs": {
         "weight": "68kg",
         "height": "162cm",
-        "sleep_quality": "2",
-        "stress_level": "4",
+        "sleep_quality": "1",
+        "stress_level": "3",
         "mood_level": "2",
         "activity_level": "1",
-        "sugar_intake": "1",
+        "sugar_intake": "0",
         "water_intake": "4",
-        "smoking_status": "1"
+        "smoking_status": "0"
       },
       "expected_result": {
         "age": 32,
@@ -70,6 +70,300 @@
         "sugar_intake": "Never",
         "water_intake": "7-8 glasses (1400-1600 ml)",
         "smoking_status": "No",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
+      "name": "Active Young Male",
+      "profile": "active_young_male",
+      "description": "Athletic young man with high activity levels",
+      "existing_data": {
+        "age": 24,
+        "gender": "Male",
+        "activity_level": "Very high (regular intense exercise or sports)",
+        "water_intake": "More than 8 glasses (+1600 ml)"
+      },
+      "inputs": {
+        "weight": "80kg",
+        "height": "180cm",
+        "has_children": "0",
+        "sleep_quality": "4",
+        "stress_level": "4",
+        "mood_level": "5",
+        "sugar_intake": "1",
+        "smoking_status": "0",
+        "supplement_usage": "1"
+      },
+      "expected_result": {
+        "age": 24,
+        "weight": 80.0,
+        "height": 180.0,
+        "gender": "Male",
+        "has_children": "No",
+        "sleep_quality": "Most of the time",
+        "stress_level": "Most of the time",
+        "mood_level": "Always",
+        "activity_level": "Very high (regular intense exercise or sports)",
+        "sugar_intake": "1-2 days",
+        "water_intake": "More than 8 glasses (+1600 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
+      "name": "Middle-aged Parent",
+      "profile": "middle_aged_parent",
+      "description": "Busy parent with moderate stress and activity",
+      "existing_data": {
+        "age": 45,
+        "has_children": "Yes",
+        "stress_level": "Less than half the time"
+      },
+      "inputs": {
+        "weight": "75kg",
+        "height": "170cm",
+        "gender": "1",
+        "sleep_quality": "2",
+        "mood_level": "3",
+        "activity_level": "2",
+        "sugar_intake": "3",
+        "water_intake": "2",
+        "smoking_status": "0",
+        "supplement_usage": "0"
+      },
+      "expected_result": {
+        "age": 45,
+        "weight": 75.0,
+        "height": 170.0,
+        "gender": "Female",
+        "has_children": "Yes",
+        "sleep_quality": "Sometimes",
+        "stress_level": "Less than half the time",
+        "mood_level": "More than half the time",
+        "activity_level": "Low (short walks, occasionally standing)",
+        "sugar_intake": "3-4 days",
+        "water_intake": "3-4 glasses (600-800 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "No"
+      }
+    },
+    {
+      "name": "Senior with Health Issues",
+      "profile": "senior_health_conscious",
+      "description": "Older adult focused on health management",
+      "existing_data": {
+        "age": 67,
+        "supplement_usage": "Yes",
+        "smoking_status": "No",
+        "sugar_intake": "Never"
+      },
+      "inputs": {
+        "height": "165cm",
+        "gender": "0",
+        "has_children": "1",
+        "sleep_quality": "1",
+        "stress_level": "3",
+        "mood_level": "3",
+        "activity_level": "1",
+        "water_intake": "3"
+      },
+      "expected_result": {
+        "age": 67,
+        "weight": 65.0,
+        "height": 165.0,
+        "gender": "Male",
+        "has_children": "Yes",
+        "sleep_quality": "Sometimes",
+        "stress_level": "More than half the time",
+        "mood_level": "More than half the time",
+        "activity_level": "Very low (mostly sitting or lying down)",
+        "sugar_intake": "Never",
+        "water_intake": "5-6 glasses (1000-1200 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
+      "name": "Stressed Professional",
+      "profile": "stressed_professional",
+      "description": "High-stress office worker with poor style habits",
+      "existing_data": {
+        "age": 35,
+        "stress_level": "Never",
+        "sleep_quality": "Never",
+        "activity_level": "Very low (mostly sitting or lying"
+      },
+      "inputs": {
+        "weight": "85kg",
+        "height": "178cm",
+        "gender": "0",
+        "has_children": "0",
+        "mood_level": "1",
+        "sugar_intake": "4",
+        "water_intake": "1",
+        "smoking_status": "3",
+        "supplement_usage": "0"
+      },
+      "expected_result": {
+        "age": 35,
+        "weight": 85.0,
+        "height": 178.0,
+        "gender": "Male",
+        "has_children": "No",
+        "sleep_quality": "Never",
+        "stress_level": "Never",
+        "mood_level": "Sometimes",
+        "activity_level": "Very low (mostly sitting or lying down)",
+        "sugar_intake": "Every day",
+        "water_intake": "1-2 glasses (200-400 ml)",
+        "smoking_status": "3-4 cigarettes per day",
+        "supplement_usage": "No"
+      }
+    },
+    {
+      "name": "Health Enthusiast",
+      "profile": "health_enthusiast",
+      "description": "Very health-conscious person with optimal habits",
+      "existing_data": {
+        "smoking_status": "No",
+        "supplement_usage": "Yes",
+        "water_intake": "More than 8 glasses (+1600 ml)",
+        "sugar_intake": "Never"
+      },
+      "inputs": {
+        "age": "29",
+        "weight": "63kg",
+        "height": "168cm",
+        "gender": "1",
+        "has_children": "0",
+        "sleep_quality": "5",
+        "stress_level": "5",
+        "mood_level": "5",
+        "activity_level": "4"
+      },
+      "expected_result": {
+        "age": 29,
+        "weight": 63.0,
+        "height": 168.0,
+        "gender": "Female",
+        "has_children": "No",
+        "sleep_quality": "Always",
+        "stress_level": "Always",
+        "mood_level": "Always",
+        "activity_level": "High (walking to work/school, using stairs, hobby sports)",
+        "sugar_intake": "Never",
+        "water_intake": "More than 8 glasses (+1600 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
+      "name": "Social Smoker",
+      "profile": "social_smoker",
+      "description": "Young professional with moderate social habits",
+      "existing_data": {
+        "age": 26,
+        "smoking_status": "Social smoker (few days a week)",
+        "has_children": "No"
+      },
+      "inputs": {
+        "weight": "70kg",
+        "height": "173cm",
+        "gender": "3",
+        "sleep_quality": "3",
+        "stress_level": "2",
+        "mood_level": "4",
+        "activity_level": "3",
+        "sugar_intake": "2",
+        "water_intake": "2",
+        "supplement_usage": "0"
+      },
+      "expected_result": {
+        "age": 26,
+        "weight": 70.0,
+        "height": 173.0,
+        "gender": "Other",
+        "has_children": "No",
+        "sleep_quality": "More than half the time",
+        "stress_level": "Sometimes",
+        "mood_level": "Most of the time",
+        "activity_level": "Moderate (daily regular walks or simple home exercises)",
+        "sugar_intake": "1-2 days",
+        "water_intake": "3-4 glasses (600-800 ml)",
+        "smoking_status": "Social smoker (few days a week)",
+        "supplement_usage": "No"
+      }
+    },
+    {
+      "name": "Privacy Conscious User",
+      "profile": "privacy_conscious",
+      "description": "User who prefers not to share some personal information",
+      "existing_data": {
+        "gender": "Prefer not to say",
+        "age": 31
+      },
+      "inputs": {
+        "weight": "refuse to answer",
+        "height": "170cm",
+        "has_children": "2",
+        "sleep_quality": "2",
+        "stress_level": "3",
+        "mood_level": "2",
+        "activity_level": "2",
+        "sugar_intake": "1",
+        "water_intake": "3",
+        "smoking_status": "0",
+        "supplement_usage": "1"
+      },
+      "expected_result": {
+        "age": 31,
+        "weight": null,
+        "height": 170.0,
+        "gender": "Prefer not to say",
+        "has_children": "Pregnant",
+        "sleep_quality": "Sometimes",
+        "stress_level": "More than half the time",
+        "mood_level": "Sometimes",
+        "activity_level": "Low (short walks, occasionally standing)",
+        "sugar_intake": "1-2 days",
+        "water_intake": "5-6 glasses (1000-1200 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
+      "name": "Type Conversion Edge Cases",
+      "profile": "edge_case_testing",
+      "description": "Tests various input formats and edge cases",
+      "existing_data": {},
+      "inputs": {
+        "age": "I'm 42 years old",
+        "weight": "78.5 kilograms",
+        "height": "5 feet 9 inches",
+        "gender": "0",
+        "has_children": "1",
+        "sleep_quality": "4",
+        "stress_level": "1",
+        "mood_level": "3",
+        "activity_level": "3",
+        "sugar_intake": "3",
+        "water_intake": "4",
+        "smoking_status": "4",
+        "supplement_usage": "1"
+      },
+      "expected_result": {
+        "age": 42,
+        "weight": 78.5,
+        "height": 175.26,
+        "gender": "Male",
+        "has_children": "Yes",
+        "sleep_quality": "Most of the time",
+        "stress_level": "Sometimes",
+        "mood_level": "More than half the time",
+        "activity_level": "Moderate (daily regular walks or simple home exercises)",
+        "sugar_intake": "3-4 days",
+        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "smoking_status": "Half pack per day",
         "supplement_usage": "Yes"
       }
     }
