@@ -1,6 +1,5 @@
 ## Updated Todo
 
-☐ Create a test for core agent with 13 fields
 ☐ Change core agent output to talk to Nora Turkish agent like an instructor
 ☐ Add possible action recommendation depending on the data collected
 ☐ Improve the Which question it should ask next rather than go in order to improve conversation flow and depending on recommendation/actions at hand
