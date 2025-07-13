@@ -1,54 +1,77 @@
 {
   "test_scenarios": [
     {
-      "name": "Fresh User",
+      "name": "Fresh User - Complete Journey",
+      "profile": "fresh_user",
+      "description": "New user starts with empty profile, tests all 13 fields",
+      "existing_data": {},
       "inputs": {
-        "age": "25",
-        "weight": "4",
-        "height": "175"
+        "age": "28",
+        "weight": "72kg",
+        "height": "175cm",
+        "gender": "2",
+        "has_children": "1",
+        "sleep_quality": "5",
+        "stress_level": "2",
+        "mood_level": "5",
+        "activity_level": "2",
+        "sugar_intake": "2",
+        "water_intake": "4",
+        "smoking_status": "1",
+        "supplement_usage": "2"
       },
       "expected_result": {
-        "age": 25,
-        "weight": "65kg",
-        "height": 175
+        "age": 28,
+        "weight": 72.0,
+        "height": 175.0,
+        "gender": "Female",
+        "has_children": "No",
+        "sleep_quality": "Most of the time",
+        "stress_level": "Sometimes",
+        "mood_level": "Most of the time",
+        "activity_level": "Low (short walks, occasionally standing)",
+        "sugar_intake": "1-2 days",
+        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
       }
     },
     {
-      "name": "Returning User Widget",
+      "name": "Pregnant Woman Profile",
+      "profile": "pregnant_woman",
+      "description": "Pregnant user with some health data pre-filled",
       "existing_data": {
-        "age": 30,
-        "weight": null,
-        "height": null
+        "age": 32,
+        "gender": "Female",
+        "has_children": "Pregnant",
+        "supplement_usage": "Yes"
       },
       "inputs": {
-        "weight": "2",
-        "height": "168"
+        "weight": "68kg",
+        "height": "162cm",
+        "sleep_quality": "2",
+        "stress_level": "4",
+        "mood_level": "2",
+        "activity_level": "1",
+        "sugar_intake": "1",
+        "water_intake": "4",
+        "smoking_status": "1"
       },
       "expected_result": {
-        "age": 30,
-        "weight": "55kg",
-        "height": 168
-      }
-    },
-    {
-      "name": "Returning User Text",
-      "existing_data": {
-        "age": null,
-        "weight": "70kg",
-        "height": null
-      },
-      "inputs": {
-        "age": "I am 40 years old",
-        "height": "5 feet 8 inches"
-      },
-      "expected_result": {
-        "age": 40,
-        "weight": "70kg",
-        "height": 173
+        "age": 32,
+        "weight": 68.0,
+        "height": 162.0,
+        "gender": "Female",
+        "has_children": "Pregnant",
+        "sleep_quality": "Sometimes",
+        "stress_level": "More than half the time",
+        "mood_level": "Sometimes",
+        "activity_level": "Very low (mostly sitting or lying down)",
+        "sugar_intake": "Never",
+        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "smoking_status": "No",
+        "supplement_usage": "Yes"
       }
     }
-  ],
-  "age": "I am 40 years old",
-  "weight": "2",
-  "height": "5 feet 8 inches"
+  ]
 }
