@@ -103,13 +103,6 @@ class Agent:
                     message_count=turn_number+1
                 )
         
-        # Create chat function with updated prompt
-        chat_function = self.kernel.add_function(
-            function_name=f"data_chat_{turn_number}",  # Make function name unique for each iteration
-            plugin_name="chat_plugin",
-            prompt=prompt
-        )
-        
         # Get available functions for context
         available_functions = get_available_functions(self.kernel)
         
@@ -125,27 +118,40 @@ class Agent:
         self.data_manager.session = self.session
         self.data_manager.current_block_id = block_id
         
-        # Try using KernelArguments to pass settings
-        arguments = KernelArguments(
-            user_input=user_input,
-            settings=self.settings
-        )
+        # Use direct chat completion instead of competing functions
+        from semantic_kernel.contents import ChatHistory
+        from semantic_kernel.contents.chat_message_content import ChatMessageContent
+        from semantic_kernel.contents.utils.author_role import AuthorRole
+        
+        # Create chat history with the prompt
+        chat_history = ChatHistory()
+        chat_history.add_message(ChatMessageContent(
+            role=AuthorRole.USER,
+            content=prompt.replace("{{$user_input}}", user_input)
+        ))
+        
+        # Get chat completion service and invoke with settings that include function calling
+        chat_service = self.kernel.get_service("openai")
         
         try:
-            response = await self.kernel.invoke(chat_function, arguments)
+            response = await chat_service.get_chat_message_contents(
+                chat_history=chat_history,
+                settings=self.settings,  # This contains FunctionChoiceBehavior.Auto() for auto function calling
+                kernel=self.kernel
+            )
         except Exception as e:
-            error_msg = f"❌ Invoke Error: {e}"
+            error_msg = f"❌ Chat Service Error: {e}"
             if self.debug_mode:
                 import traceback
                 traceback.print_exc()
             return error_msg
         
         # Get the actual response content
-        chat_message = response.value[0]  # First (and only) message
-        clean_response = chat_message.content
+        chat_message = response[0] if response else None  # First (and only) message
+        clean_response = chat_message.content if chat_message else "No response received"
         
         # Complete the AI block
-        self.session.complete_ai_block(block_id, str(response.value), clean_response)
+        self.session.complete_ai_block(block_id, str(response), clean_response)
         
         # Track what changed during this block and add to last block
         final_data = self.data_manager.load_data()
@@ -155,8 +161,8 @@ class Agent:
         
         # STAGE 1: Track LLM requests (vs Stage 2 actual execution in kernel_functions)
         # Purpose: Debug LLM behavior, routing issues, compare request vs execution
-        if hasattr(response, 'value'):
-            messages = response.value if isinstance(response.value, list) else [response.value]
+        if response:
+            messages = response if isinstance(response, list) else [response] if response else []
             for message in messages:
                 if hasattr(message, 'items'):
                     for item in message.items:
