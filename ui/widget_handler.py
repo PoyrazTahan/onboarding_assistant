@@ -70,13 +70,16 @@ class WidgetHandler:
         
         # Handle different question formats
         if "options" in question:
-            # Regular options question
-            options = question["options"]
+            # Regular options question - extract display text for UI
+            option_objects = question["options"]
+            display_options = [opt["display_tr"] for opt in option_objects]
+            options = display_options  # For UI display
         elif question.get("expected_format") == "scale":
             # Scale question (1-10)
             scale = question.get("scale", "1-10")
             start, end = map(int, scale.split("-"))
             options = [str(i) for i in range(start, end + 1)]
+            option_objects = None  # No mapping needed for scales
         else:
             print("❌ No options available for this question")
             return None
@@ -92,19 +95,29 @@ class WidgetHandler:
             field = question.get('field', '').lower()
             expected_value = test_data.get(field)
             
-            # Try exact match first
-            if expected_value in options:
-                selected_option = expected_value
-                option_number = options.index(expected_value) + 1
-                print(f"    🤖 TEST MODE: Auto-selecting option {option_number}: '{selected_option}'")
-            else:
-                # Treat test value as option number (1-based)
+            if option_objects:  # Widget with value/display mapping
+                # Try exact match with English values first
+                english_values = [opt["value"] for opt in option_objects]
+                if expected_value in english_values:
+                    option_index = english_values.index(expected_value)
+                    selected_display = options[option_index]  # Turkish display
+                    selected_value = expected_value  # English value
+                    print(f"    🤖 TEST MODE: Auto-selecting option {option_index + 1}: '{selected_display}' -> '{selected_value}'")
+                else:
+                    # Treat test value as option number (1-based)
+                    option_index = int(expected_value) - 1
+                    selected_display = options[option_index]  # Turkish display
+                    selected_value = option_objects[option_index]["value"]  # English value
+                    print(f"    🤖 TEST MODE: Auto-selecting option {int(expected_value)}: '{selected_display}' -> '{selected_value}'")
+                
+                print_widget_box(question_text, options, selected_display)
+                return selected_value  # Return English value for data consistency
+            else:  # Scale questions - no mapping needed
                 option_number = int(expected_value)
                 selected_option = options[option_number - 1]
                 print(f"    🤖 TEST MODE: Auto-selecting option {option_number}: '{selected_option}'")
-            
-            print_widget_box(question_text, options, selected_option)
-            return selected_option
+                print_widget_box(question_text, options, selected_option)
+                return selected_option
         
         # INTERACTIVE MODE: Get user input
         while True:
@@ -113,10 +126,16 @@ class WidgetHandler:
                 choice_num = int(user_input)
                 
                 if 1 <= choice_num <= len(options):
-                    selected_option = options[choice_num - 1]
-                    # Show widget box again with selected option highlighted
-                    print_widget_box(question_text, options, selected_option)
-                    return selected_option
+                    choice_index = choice_num - 1
+                    selected_display = options[choice_index]  # Turkish display
+                    
+                    if option_objects:  # Widget with value/display mapping
+                        selected_value = option_objects[choice_index]["value"]  # English value
+                        print_widget_box(question_text, options, selected_display)
+                        return selected_value  # Return English value for data consistency
+                    else:  # Scale questions - no mapping needed
+                        print_widget_box(question_text, options, selected_display)
+                        return selected_display
                 else:
                     print(f"    ❌ Lütfen 1-{len(options)} arasında bir rakam girin")
                     
@@ -125,9 +144,16 @@ class WidgetHandler:
             except (KeyboardInterrupt, EOFError):
                 print("\n    ❌ Widget iptal edildi")
                 if options:
-                    selected_option = options[0]
-                    print_widget_box(question_text, options, selected_option)
-                    return selected_option
+                    choice_index = 0
+                    selected_display = options[choice_index]
+                    
+                    if option_objects:  # Widget with value/display mapping
+                        selected_value = option_objects[choice_index]["value"]  # English value
+                        print_widget_box(question_text, options, selected_display)
+                        return selected_value
+                    else:  # Scale questions
+                        print_widget_box(question_text, options, selected_display)
+                        return selected_display
                 return None
     
     
