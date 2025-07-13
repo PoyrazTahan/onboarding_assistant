@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Test runner with automated evaluation - Runs test scenarios and validates results
-PRODUCTION: Delete this file and use app.py directly
+Core Agent Test Runner - Clean test automation for data collection scenarios
 """
 
 import json
 import sys
 import os
 import asyncio
-import shutil
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
+from ui.chat_ui import print_system_message, print_user_message
 
 def load_test_scenarios():
     """Load test scenarios from test.json"""
@@ -19,36 +18,34 @@ def load_test_scenarios():
     return data.get("test_scenarios", [])
 
 def setup_test_data(scenario):
-    """Setup data.json for specific test scenario"""
-    # Default empty state
-    default_data = {"age": None, "weight": None, "height": None}
+    """Setup test data - only modify if existing_data specified"""
+    existing_data = scenario.get("existing_data", {})
     
-    # Apply existing data if specified
-    if "existing_data" in scenario:
-        default_data.update(scenario["existing_data"])
+    if existing_data:
+        # Load current data.json and update with pre-filled fields
+        with open("data/data.json", 'r') as f:
+            current_data = json.load(f)
+        
+        current_data.update(existing_data)
+        
+        with open("data/data.json", 'w') as f:
+            json.dump(current_data, f, indent=2)
+            
+        return current_data
     
-    # Save to data.json
-    with open("data/data.json", 'w') as f:
-        json.dump(default_data, f, indent=2)
-    
-    print(f"📋 Setup data state: {default_data}")
+    # No existing_data - use current data.json as-is
+    with open("data/data.json", 'r') as f:
+        return json.load(f)
 
-def setup_test_outputs(test_name):
-    """Setup clean output directories for test run"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    test_dir = f".test_results/{test_name.replace(' ', '_')}_{timestamp}"
+def evaluate_test(scenario):
+    """Evaluate test result - compare actual vs expected"""
+    if not os.path.exists("data/data.json"):
+        return False, [{"error": "No final data found"}], {}
     
-    # Create test output directory
-    Path(test_dir).mkdir(parents=True, exist_ok=True)
+    with open("data/data.json", 'r') as f:
+        final_data = json.load(f)
     
-    # Create subdirectories
-    Path(f"{test_dir}/sessions").mkdir(exist_ok=True)
-    Path(f"{test_dir}/telemetry").mkdir(exist_ok=True)
-    
-    return test_dir
-
-def compare_results(final_data, expected_data):
-    """Compare final results with expected results"""
+    expected_data = scenario.get("expected_result", {})
     mismatches = []
     
     for field, expected_value in expected_data.items():
@@ -60,142 +57,270 @@ def compare_results(final_data, expected_data):
                 "actual": actual_value
             })
     
-    return len(mismatches) == 0, mismatches
+    return len(mismatches) == 0, mismatches, final_data
 
-def backup_test_results(test_dir, scenario):
-    """Move generated files to test directory after run"""
-    # Move only the current session file (newest one)
-    if os.path.exists("data/sessions"):
-        session_files = [f for f in os.listdir("data/sessions") if f.endswith(".json")]
-        if session_files:
-            # Get the most recent session file (this test's file)
-            newest_session = max(session_files, key=lambda f: os.path.getctime(f"data/sessions/{f}"))
-            shutil.move(f"data/sessions/{newest_session}", f"{test_dir}/sessions/session.json")
+def print_test_summary(test_num, scenario, test_passed, mismatches, final_data, start_data):
+    """Print concise test summary"""
+    status = "✅ PASS" if test_passed else "❌ FAIL"
+    profile = scenario.get("profile", "generic")
     
-    # Create enhanced final data with test evaluation
-    if os.path.exists("data/data.json"):
-        with open("data/data.json", 'r') as f:
-            final_data = json.load(f)
-        
-        # Get expected results and starting data
-        expected_data = scenario.get("expected_result", {})
-        start_data = scenario.get("existing_data", {"age": None, "weight": None, "height": None})
-        
-        # Compare results
-        test_passed, mismatches = compare_results(final_data, expected_data)
-        
-        # Create comprehensive test result
-        test_result = {
-            "test_name": scenario["name"],
-            "start_data": start_data,
-            "final_data": final_data,
-            "expected_data": expected_data,
-            "test_passed": test_passed,
+    print(f"{test_num:2d}. {status} {scenario['name']} ({profile})")
+    
+    if not test_passed:
+        print(f"    Mismatches: {len(mismatches)}")
+        for mismatch in mismatches[:3]:  # Show first 3 mismatches
+            field = mismatch['field']
+            expected = mismatch['expected']
+            actual = mismatch['actual']
+            print(f"    • {field}: expected '{expected}', got '{actual}'")
+        if len(mismatches) > 3:
+            print(f"    • ... and {len(mismatches) - 3} more")
+    
+    # Show data completion stats
+    filled_fields = sum(1 for v in final_data.values() if v is not None)
+    total_fields = len(final_data)
+    pre_filled = sum(1 for v in start_data.values() if v is not None)
+    
+    print(f"    Data: {pre_filled}→{filled_fields}/{total_fields} fields")
+
+def save_session_result(scenario, final_data, test_passed, mismatches, session_id):
+    """Save complete session result with test evaluation"""
+    import os
+    results_dir = ".test_results"
+    os.makedirs(results_dir, exist_ok=True)
+    
+    test_name = scenario['name'].replace(' ', '_').lower()
+    
+    session_result = {
+        "test_info": {
+            "name": scenario['name'],
+            "profile": scenario.get('profile', 'generic'),
+            "description": scenario.get('description', ''),
+            "session_id": session_id,
+            "timestamp": datetime.now().isoformat()
+        },
+        "inputs_provided": scenario.get('inputs', {}),
+        "expected_result": scenario.get('expected_result', {}),
+        "actual_result": final_data,
+        "test_evaluation": {
+            "passed": test_passed,
+            "total_fields": len(scenario.get('expected_result', {})),
+            "matched_fields": len(scenario.get('expected_result', {})) - len(mismatches),
             "mismatches": mismatches
+        },
+        "data_completion": {
+            "filled_fields": sum(1 for v in final_data.values() if v is not None),
+            "total_fields": len(final_data),
+            "completion_rate": sum(1 for v in final_data.values() if v is not None) / len(final_data) if final_data else 0
         }
-        
-        # Save enhanced result
-        with open(f"{test_dir}/final_data.json", 'w') as f:
-            json.dump(test_result, f, indent=2)
-        
-        return test_passed, mismatches
+    }
     
-    return False, [{"error": "No final data found"}]
+    result_file = f"{results_dir}/{test_name}.json"
+    with open(result_file, 'w') as f:
+        json.dump(session_result, f, indent=2)
+    
+    status = "✅ PASS" if test_passed else "❌ FAIL"
+    print(f"    💾 Session result saved: {result_file} ({status})")
+
+async def run_core_agent_test(test_inputs, test_name="test"):
+    """Run core agent test with provided inputs directly (no file overwriting)"""
+    # Set up flags before import
+    import sys
+    original_argv = sys.argv.copy()
+    sys.argv = ["test.py", "--test", "--core-agent"]
+    
+    try:
+        # Import and setup  
+        from core.agent import Agent
+        from app import ConversationHandler
+        
+        # Initialize agent
+        agent = Agent(debug_mode=False)
+        await agent.initialize()
+        
+        # Start session
+        session = agent.start_session()
+        
+        # Create test conversation handler with automation
+        conversation_handler = TestConversationHandler(agent, test_name)
+        await conversation_handler.run_test_mode(test_data=test_inputs)
+        
+        return agent
+        
+    finally:
+        # Restore original argv
+        sys.argv = original_argv
+
+class TestConversationHandler:
+    """Test automation handler - simulates user input for automated testing"""
+    
+    def __init__(self, agent, test_name):
+        from app import ConversationHandler
+        self.base_handler = ConversationHandler(agent)
+        self.agent = agent
+        self.test_name = test_name
+        
+    def _get_next_test_input(self, session):
+        """Test automation: get next simulated user input"""
+        # Check for pending widget first (highest priority)
+        widget_info = session.stage_manager.get_pending_widget()
+        if widget_info:
+            return self._execute_test_widget(widget_info)
+        
+        # Check for test mode automation  
+        test_response = session.stage_manager.get_pending_test_response()
+        if test_response:
+            print(f"    🎯 TEST MODE: Detected question, next input will be: '{test_response}'")
+            return test_response
+        
+        # Fallback for test automation
+        print(f"    🤖 TEST MODE: No question detected, continuing conversation")
+        return "Please continue, try to use available functions_calls correctly."
+    
+    def _execute_test_widget(self, widget_info):
+        """Execute widget with test automation"""
+        # Get test value for this field
+        session = self.agent.get_session()
+        field = widget_info["field"]
+        test_value = None
+        
+        if (hasattr(session.stage_manager, 'test_data') and 
+            session.stage_manager.test_data and 
+            field in session.stage_manager.test_data):
+            test_value = session.stage_manager.test_data[field]
+        
+        # Initialize widget handler with test automation
+        from ui.widget_handler import WidgetHandler
+        widget_handler = WidgetHandler()
+        
+        # Execute widget with test value
+        selected_value = widget_handler.show_widget_interface(
+            widget_info["question_structure"], 
+            test_value=test_value
+        )
+        
+        if selected_value:
+            # Auto-call update_data with selected value
+            update_result = self.agent.data_manager.update_data(widget_info["field"], selected_value)
+            print(f"    ✅ WIDGET: Auto-updated {widget_info['field']} = {selected_value}")
+            
+            # Store completion info for hidden LLM context injection
+            widget_completion = {
+                "field": widget_info["field"],
+                "selected_value": selected_value,
+                "update_result": update_result
+            }
+            
+            # Store in session for next LLM call context injection
+            session.stage_manager.widget_completion = widget_completion
+            
+            print(f"    🎛️ WIDGET: Selected '{selected_value}', using as next user input")
+            return selected_value
+        
+        return "Please continue"
+        
+    async def run_test_mode(self, test_data=None):
+        """Run test mode with automation"""
+        print_system_message("🧪 Running in TEST MODE with automation")
+        
+        # Enable test mode on session's stage manager
+        session = self.agent.get_session()
+        if test_data is not None:
+            session.stage_manager.enable_test_mode_with_data(test_data)
+        else:
+            session.stage_manager.enable_test_mode()
+        
+        # Handle initial greeting
+        greeting = self.base_handler._get_greeting()
+        if greeting:
+            await self.base_handler._display_agent_message(greeting)
+        
+        # Start with initial greeting response
+        user_input = "Hello, I need help filling out my data."
+        turn_number = 0
+        
+        while not self.base_handler._is_complete() and turn_number < 20:  # Safety limit
+            print_user_message(user_input)
+            
+            # Process input through agent
+            response = await self.base_handler._process_input(user_input, turn_number=turn_number)
+            await self.base_handler._display_agent_message(response)
+            
+            # Check if conversation is complete
+            if self.base_handler._is_complete():
+                print_system_message("✅ All data collected! Conversation complete.")
+                break
+            
+            # Get next test input (handles both widgets and regular automation)
+            user_input = self._get_next_test_input(session)
+            
+            turn_number += 1
+
+async def run_test_scenario(scenario, test_number=None):
+    """Run a single test scenario and return results"""
+    start_data = setup_test_data(scenario)
+    test_inputs = scenario.get("inputs", {})
+    test_name = scenario['name'].replace(' ', '_').lower()
+    
+    try:
+        agent = await run_core_agent_test(test_inputs, test_name)
+    except Exception as e:
+        error_msg = f"❌ CRASH {scenario['name']} - {str(e)}"
+        if test_number:
+            print(error_msg)
+        return None, error_msg
+    
+    # Evaluate results
+    test_passed, mismatches, final_data = evaluate_test(scenario)
+    
+    # Save session result
+    session = agent.get_session()
+    save_session_result(scenario, final_data, test_passed, mismatches, session.id)
+    
+    # Print summary
+    display_number = test_number if test_number else ""
+    print_test_summary(display_number, scenario, test_passed, mismatches, final_data, start_data)
+    
+    return test_passed, None
 
 def list_tests():
-    """List available test scenarios"""
+    """List available test scenarios with profile information"""
     scenarios = load_test_scenarios()
     print("📋 Available test scenarios:")
     for i, scenario in enumerate(scenarios, 1):
         name = scenario["name"]
-        inputs = scenario["inputs"]
+        profile = scenario.get("profile", "generic")
         existing = scenario.get("existing_data", {})
         
-        print(f"  {i}. {name}")
-        if existing:
-            filled = [k for k, v in existing.items() if v is not None]
-            print(f"     Pre-filled: {filled}")
-        print(f"     Will test: {list(inputs.keys())}")
+        filled_count = sum(1 for v in existing.values() if v is not None) if existing else 0
+        
+        print(f"  {i:2d}. {name} ({profile}) - {filled_count} pre-filled")
     print()
 
-def run_specific_test(test_number):
-    """Run a specific test by number"""
-    scenarios = load_test_scenarios()
-    
-    if test_number < 1 or test_number > len(scenarios):
-        print(f"❌ Invalid test number. Available: 1-{len(scenarios)}")
-        return None
-    
-    scenario = scenarios[test_number - 1]
-    test_name = scenario["name"]
-    print(f"🧪 Running: {test_name}")
-    
-    # Setup output directory
-    test_dir = setup_test_outputs(test_name)
-    print(f"📁 Test outputs: {test_dir}")
-    
-    # Setup data state
-    setup_test_data(scenario)
-    
-    # Update test.json to use this scenario's inputs (backward compatibility)
-    with open("data/test.json", 'r') as f:
-        test_data = json.load(f)
-    
-    # Create legacy format for existing test infrastructure
-    legacy_inputs = scenario["inputs"]
-    test_data.update(legacy_inputs)
-    
-    with open("data/test.json", 'w') as f:
-        json.dump(test_data, f, indent=2)
-    
-    return test_dir
-
 async def main():
-    """Main test runner"""
+    """Main test runner with aggregated results"""
     
     # No arguments = run all tests
     if len(sys.argv) < 2:
         scenarios = load_test_scenarios()
-        print(f"🧪 Running ALL {len(scenarios)} test scenarios")
+        print(f"🧪 Core Agent Test Suite - {len(scenarios)} scenarios")
+        print("=" * 60)
         
         passed_tests = 0
         failed_tests = 0
         
-        for i in range(1, len(scenarios) + 1):
-            print(f"\n{'='*60}")
-            print(f"🔄 Test {i}/{len(scenarios)}")
-            
-            test_dir = run_specific_test(i)
-            if not test_dir:
-                continue
-                
-            print("🚀 Starting test execution...")
-            
-            # Setup sys.argv for app.py
-            original_argv = sys.argv.copy()
-            sys.argv = ["app.py", "--test"]
-            
-            try:
-                from app import main as app_main
-                await app_main()
-            finally:
-                scenario = scenarios[i-1]
-                test_passed, mismatches = backup_test_results(test_dir, scenario)
-                sys.argv = original_argv
-            
-            # Display test result
-            if test_passed:
-                print(f"✅ Test {i} PASSED - Results in: {test_dir}")
+        for i, scenario in enumerate(scenarios, 1):
+            result, error = await run_test_scenario(scenario, i)
+            if result is None:  # Crashed
+                print(f"  {i:2d}. {error}")
+                failed_tests += 1
+            elif result:  # Passed
                 passed_tests += 1
-            else:
-                print(f"❌ Test {i} FAILED - Results in: {test_dir}")
-                print(f"   Mismatches: {len(mismatches)}")
-                for mismatch in mismatches:
-                    print(f"   • {mismatch['field']}: expected {mismatch['expected']}, got {mismatch['actual']}")
+            else:  # Failed
                 failed_tests += 1
         
-        print(f"\n{'='*60}")
-        print(f"🎉 ALL TESTS COMPLETED: {passed_tests} passed, {failed_tests} failed")
+        print("=" * 60)
+        print(f"📊 Results: {passed_tests} passed, {failed_tests} failed")
         return
     
     command = sys.argv[1]
@@ -216,42 +341,16 @@ async def main():
             print("❌ Test number must be an integer")
             return
         
-        # Setup test
-        test_dir = run_specific_test(test_number)
-        if not test_dir:
+        # Get specific test scenario
+        scenarios = load_test_scenarios()
+        if test_number < 1 or test_number > len(scenarios):
+            print(f"❌ Invalid test number. Available: 1-{len(scenarios)}")
             return
         
-        # Import and run app.py
-        print("🚀 Starting test execution...")
-        print("=" * 50)
+        scenario = scenarios[test_number - 1]
+        print(f"🧪 Running: {scenario['name']} ({scenario.get('profile', 'generic')})")
         
-        # Add --test flag and any additional flags
-        original_argv = sys.argv.copy()
-        sys.argv = ["app.py", "--test"]
-        
-        # Add debug if requested
-        if "--debug" in original_argv:
-            sys.argv.append("--debug")
-        
-        try:
-            # Import and run the main app
-            from app import main as app_main
-            await app_main()
-        finally:
-            # Always backup results and restore argv
-            scenarios = load_test_scenarios()
-            scenario = scenarios[test_number-1]
-            test_passed, mismatches = backup_test_results(test_dir, scenario)
-            sys.argv = original_argv
-        
-        print("=" * 50)
-        if test_passed:
-            print(f"✅ Test PASSED - Results in: {test_dir}")
-        else:
-            print(f"❌ Test FAILED - Results in: {test_dir}")
-            print(f"Mismatches: {len(mismatches)}")
-            for mismatch in mismatches:
-                print(f"• {mismatch['field']}: expected {mismatch['expected']}, got {mismatch['actual']}")
+        await run_test_scenario(scenario, test_number)
     
     else:
         print(f"❌ Unknown command: {command}")

@@ -70,42 +70,33 @@ class ConversationHandler:
         for message in turkish_messages:
             print_agent_message(message)
     
-    def _execute_widget_and_get_user_input(self, widget_info):
-        """Execute widget and return what should be the next user input"""
-        try:
-            # Initialize widget handler
-            from ui.widget_handler import WidgetHandler
-            widget_handler = WidgetHandler()
+    def _execute_widget(self, widget_info):
+        """Execute widget for real user interaction"""
+        from ui.widget_handler import WidgetHandler
+        widget_handler = WidgetHandler()
+        
+        # Execute widget - real user interaction, no test automation
+        selected_value = widget_handler.show_widget_interface(widget_info["question_structure"])
+        
+        if selected_value:
+            # Auto-call update_data with selected value
+            update_result = self.agent.data_manager.update_data(widget_info["field"], selected_value)
+            print(f"    ✅ WIDGET: Updated {widget_info['field']} = {selected_value}")
             
-            # Execute widget and get selection
-            selected_value = widget_handler.show_widget_interface(widget_info["question_structure"])
+            # Store completion info for hidden LLM context injection
+            widget_completion = {
+                "field": widget_info["field"],
+                "selected_value": selected_value,
+                "update_result": update_result
+            }
             
-            if selected_value:
-                # Auto-call update_data with selected value
-                update_result = self.agent.data_manager.update_data(widget_info["field"], selected_value)
-                print(f"    ✅ WIDGET: Auto-updated {widget_info['field']} = {selected_value}")
-                
-                # Store completion info for hidden LLM context injection
-                widget_completion = {
-                    "field": widget_info["field"],
-                    "selected_value": selected_value,
-                    "update_result": update_result
-                }
-                
-                # Store in session for next LLM call context injection
-                session = self.agent.get_session()
-                session.stage_manager.widget_completion = widget_completion
-                
-                # Return the value as user input for the next block
-                return selected_value
-            else:
-                # Widget cancelled - continue with fallback
-                return None
-                
-        except Exception as e:
-            error_msg = f"Widget execution error: {e}"
-            print(f"    ❌ WIDGET ERROR: {error_msg}")
-            return None
+            # Store in session for next LLM call context injection
+            session = self.agent.get_session()
+            session.stage_manager.widget_completion = widget_completion
+            
+            return selected_value
+        
+        return None
 
     async def _process_pending_widgets(self, turn_number):
         """Process any pending widgets using tail recursion (no loops)"""
@@ -115,7 +106,7 @@ class ConversationHandler:
         if not widget_info:
             return turn_number
             
-        selected_value = self._execute_widget_and_get_user_input(widget_info)
+        selected_value = self._execute_widget(widget_info)
         
         if not selected_value:
             return turn_number
@@ -131,59 +122,6 @@ class ConversationHandler:
         return await self._process_pending_widgets(turn_number + 1)
 
     
-    async def run_test_mode(self):
-        """Run conversation with stage manager real-time detection"""
-        print_system_message("🧪 Running in TEST MODE with stage manager")
-        
-        # Enable test mode on session's stage manager
-        session = self.agent.get_session()
-        session.stage_manager.enable_test_mode()
-        
-        # Handle initial greeting
-        greeting = self._get_greeting()
-        if greeting:
-            await self._display_agent_message(greeting)
-        
-        # Start with initial greeting response
-        user_input = "Hello, I need help filling out my data."
-        turn_number = 0
-        
-        while not self._is_complete() and turn_number < 10:  # Safety limit
-            print_user_message(user_input)
-            
-            # Process input through agent (function call hooks trigger during this)
-            response = await self._process_input(user_input, turn_number=turn_number)
-            # print(f"🔍 DEBUG: Full AI response: '{response}'")
-            await self._display_agent_message(response)
-            
-            # Check if conversation is complete
-            if self._is_complete():
-                print_system_message("✅ All data collected! Conversation complete.")
-                break
-            
-            # Check for pending widget first (highest priority)
-            widget_info = session.stage_manager.get_pending_widget()
-            if widget_info:
-                # Execute widget after LLM response is shown
-                selected_value = self._execute_widget_and_get_user_input(widget_info)
-                if selected_value:
-                    user_input = selected_value
-                    print(f"    🎛️ WIDGET: Selected '{selected_value}', using as next user input")
-                else:
-                    user_input = "Please continue"
-            else:
-                # Check for test mode automation  
-                test_response = session.stage_manager.get_pending_test_response()
-                
-                if test_response:
-                    print(f"    🎯 TEST MODE: Detected question, next input will be: '{test_response}'")
-                    user_input = test_response
-                else:
-                    # Only use fallback if we genuinely have no test response
-                    print(f"    🤖 TEST MODE: No question detected, continuing conversation")
-                    user_input = "Please continue, try to use available functions_calls correctly."
-            
-            turn_number += 1
     
     async def run_interactive_mode(self):
         """Run interactive conversation with user input"""
@@ -227,7 +165,7 @@ class ConversationHandler:
                 widget_info = session.stage_manager.get_pending_widget()
                 if widget_info:
                     # Execute widget after LLM response is shown
-                    selected_value = self._execute_widget_and_get_user_input(widget_info)
+                    selected_value = self._execute_widget(widget_info)
                     
                     if selected_value:
                         # Continue with next turn automatically using widget selection
@@ -259,10 +197,7 @@ class ConversationHandler:
     
     async def run_conversation(self):
         """Main conversation orchestrator"""
-        if TEST_MODE:
-            await self.run_test_mode()
-        else:
-            await self.run_interactive_mode()
+        await self.run_interactive_mode()
 
 
 async def main():

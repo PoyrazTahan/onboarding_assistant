@@ -264,6 +264,12 @@ class ConversationStageManager:
             print(f"    ⚠️ Stage Manager: Error loading test data: {e}")
             self.test_mode = False
     
+    def enable_test_mode_with_data(self, test_data):
+        """Enable test mode with directly provided test data"""
+        self.test_mode = True
+        self.test_data = test_data
+        print(f"    📋 Stage Manager: Loaded test data directly ({len(test_data)} fields)")
+    
     def on_function_call(self, function_name, arguments, result):
         """Hook called when any kernel function is executed (like telemetry)"""
         # print(f"🔧 STAGE MANAGER HOOK: {function_name} called with {arguments}")

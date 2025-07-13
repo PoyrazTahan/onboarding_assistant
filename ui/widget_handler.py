@@ -62,7 +62,7 @@ class WidgetHandler:
         
         return unanswered
     
-    def show_widget_interface(self, question: Dict) -> Optional[str]:
+    def show_widget_interface(self, question: Dict, test_value: Optional[str] = None) -> Optional[str]:
         """Show widget interface and get user selection"""
         from ui.chat_ui import print_widget_box
         
@@ -88,12 +88,8 @@ class WidgetHandler:
         print_widget_box(question_text, options)
         
         # TEST MODE: Automated selection
-        if TEST_MODE:
-            with open("data/test.json", 'r') as f:
-                test_data = json.load(f)
-            
-            field = question.get('field', '').lower()
-            expected_value = test_data.get(field)
+        if TEST_MODE and test_value is not None:
+            expected_value = test_value
             
             if option_objects:  # Widget with value/display mapping
                 # Try exact match with English values first

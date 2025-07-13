@@ -296,6 +296,43 @@
       }
     },
     {
+      "name": "Type Conversion Edge Cases",
+      "profile": "edge_case_testing",
+      "description": "Tests various input formats and edge cases",
+      "existing_data": {
+        "gender": "Male",
+        "has_children": "Yes",
+        "sleep_quality": "Most of the time",
+        "stress_level": "Sometimes",
+        "mood_level": "More than half the time",
+        "activity_level": "Moderate (daily regular walks or simple home exercises)",
+        "sugar_intake": "3-4 days",
+        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "smoking_status": "Half pack per day",
+        "supplement_usage": "Yes"
+      },
+      "inputs": {
+        "age": "I'm 42 years old",
+        "weight": "78.5 kilograms",
+        "height": "5 feet 9 inches"
+      },
+      "expected_result": {
+        "age": 42,
+        "weight": 78.5,
+        "height": 175.26,
+        "gender": "Male",
+        "has_children": "Yes",
+        "sleep_quality": "Most of the time",
+        "stress_level": "Sometimes",
+        "mood_level": "More than half the time",
+        "activity_level": "Moderate (daily regular walks or simple home exercises)",
+        "sugar_intake": "3-4 days",
+        "water_intake": "7-8 glasses (1400-1600 ml)",
+        "smoking_status": "Half pack per day",
+        "supplement_usage": "Yes"
+      }
+    },
+    {
       "name": "Privacy Conscious User",
       "profile": "privacy_conscious",
       "description": "User who prefers not to share some personal information",
@@ -329,42 +366,6 @@
         "sugar_intake": "1-2 days",
         "water_intake": "5-6 glasses (1000-1200 ml)",
         "smoking_status": "No",
-        "supplement_usage": "Yes"
-      }
-    },
-    {
-      "name": "Type Conversion Edge Cases",
-      "profile": "edge_case_testing",
-      "description": "Tests various input formats and edge cases",
-      "existing_data": {},
-      "inputs": {
-        "age": "I'm 42 years old",
-        "weight": "78.5 kilograms",
-        "height": "5 feet 9 inches",
-        "gender": "1",
-        "has_children": "2",
-        "sleep_quality": "5",
-        "stress_level": "2",
-        "mood_level": "4",
-        "activity_level": "3",
-        "sugar_intake": "3",
-        "water_intake": "4",
-        "smoking_status": "4",
-        "supplement_usage": "2"
-      },
-      "expected_result": {
-        "age": 42,
-        "weight": 78.5,
-        "height": 175.26,
-        "gender": "Male",
-        "has_children": "Yes",
-        "sleep_quality": "Most of the time",
-        "stress_level": "Sometimes",
-        "mood_level": "More than half the time",
-        "activity_level": "Moderate (daily regular walks or simple home exercises)",
-        "sugar_intake": "3-4 days",
-        "water_intake": "7-8 glasses (1400-1600 ml)",
-        "smoking_status": "Half pack per day",
         "supplement_usage": "Yes"
       }
     }
