@@ -160,7 +160,7 @@ class DataManager:
     
     @kernel_function(
         name="update_data",
-        description="Update a specific field ONLY when you have actual user-provided information. Do NOT call with empty values or duplicate existing data."
+        description="Saves the user's answer to a specific field. After saving, this function's return message will EXPLICITLY tell you what to do next: either call ask_question for the next empty field or confirm that the process is complete. You must follow this instruction."
     )
     def update_data(
         self,
@@ -189,15 +189,31 @@ class DataManager:
             return self._handle_error("duplicate_value", field, value,
                                     f"Field {actual_field} already has value '{data[actual_field]}'. No update needed unless user provides new information.")
         
-        # Type conversion
-        if actual_field in ["age", "height"]:
+        # Type conversion for numeric fields
+        if actual_field == "age":
             try:
                 data[actual_field] = int(value)
             except ValueError:
-                additional_info = ' in centimeters which you should convert' if actual_field == "height" else ''
                 return self._handle_error("type_conversion", field, value,
-                                        f"Error: {actual_field} must be a number{additional_info}, got '{value}' ")
+                                        f"Error: {actual_field} must be a whole number, got '{value}' ")
+        elif actual_field == "height":
+            try:
+                # Handle height as float (removing any units like 'cm')
+                clean_value = value.replace('cm', '').replace('centimeter', '').strip()
+                data[actual_field] = float(clean_value)
+            except ValueError:
+                return self._handle_error("type_conversion", field, value,
+                                        f"Error: {actual_field} must be a number in centimeters, got '{value}' ")
+        elif actual_field == "weight":
+            try:
+                # Handle weight as float (removing any units like 'kg')
+                clean_value = value.replace('kg', '').replace('kilo', '').strip()
+                data[actual_field] = float(clean_value)
+            except ValueError:
+                return self._handle_error("type_conversion", field, value,
+                                        f"Error: {actual_field} must be a number in kilograms, got '{value}' ")
         else:
+            # All other fields (widget-based) remain as strings
             data[actual_field] = value
         
         # Success path
@@ -215,7 +231,7 @@ class DataManager:
     
     @kernel_function(
         name="ask_question",
-        description="Ask user for specific missing information"
+        description="Use this function, and ONLY this function, to ask the user a question. Your primary goal is to fill all data fields one by one. Call this function to ask the single next question in the data collection process."
     )
     def ask_question(
         self,

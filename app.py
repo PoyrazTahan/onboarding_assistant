@@ -106,6 +106,30 @@ class ConversationHandler:
             error_msg = f"Widget execution error: {e}"
             print(f"    ❌ WIDGET ERROR: {error_msg}")
             return None
+
+    async def _process_pending_widgets(self, turn_number):
+        """Process any pending widgets using tail recursion (no loops)"""
+        session = self.agent.get_session()
+        widget_info = session.stage_manager.get_pending_widget()
+        
+        if not widget_info:
+            return turn_number
+            
+        selected_value = self._execute_widget_and_get_user_input(widget_info)
+        
+        if not selected_value:
+            return turn_number
+            
+        # Process widget selection
+        print_user_message(selected_value)
+        print_thinking_indicator()
+        response = await self._process_input(selected_value, turn_number=turn_number+1)
+        clear_thinking_indicator()
+        await self._display_agent_message(response)
+        
+        # Tail recursion: check for more widgets
+        return await self._process_pending_widgets(turn_number + 1)
+
     
     async def run_test_mode(self):
         """Run conversation with stage manager real-time detection"""
@@ -214,6 +238,10 @@ class ConversationHandler:
                         next_response = await self._process_input(selected_value, turn_number=turn_number+1)
                         clear_thinking_indicator()
                         await self._display_agent_message(next_response)
+                        
+                        # Check for additional widgets after processing widget selection
+                        turn_number = await self._process_pending_widgets(turn_number + 1)
+                        
                         turn_number += 1  # Extra increment for widget turn
                 
                 turn_number += 1
