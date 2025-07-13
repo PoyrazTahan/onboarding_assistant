@@ -9,16 +9,16 @@
         "age": "28",
         "weight": "72kg",
         "height": "175cm",
-        "gender": "1",
-        "has_children": "0",
-        "sleep_quality": "3",
+        "gender": "2",
+        "has_children": "1",
+        "sleep_quality": "4",
         "stress_level": "2",
-        "mood_level": "4",
+        "mood_level": "5",
         "activity_level": "2",
         "sugar_intake": "2",
         "water_intake": "3",
-        "smoking_status": "0",
-        "supplement_usage": "1"
+        "smoking_status": "1",
+        "supplement_usage": "2"
       },
       "expected_result": {
         "age": 28,
