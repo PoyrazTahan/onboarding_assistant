@@ -49,13 +49,13 @@
       "inputs": {
         "weight": "68kg",
         "height": "162cm",
-        "sleep_quality": "1",
+        "sleep_quality": "2",
         "stress_level": "3",
         "mood_level": "2",
         "activity_level": "1",
-        "sugar_intake": "0",
+        "sugar_intake": "1",
         "water_intake": "4",
-        "smoking_status": "0"
+        "smoking_status": "1"
       },
       "expected_result": {
         "age": 32,
@@ -64,7 +64,7 @@
         "gender": "Female",
         "has_children": "Pregnant",
         "sleep_quality": "Sometimes",
-        "stress_level": "More than half the time",
+        "stress_level": "Less than half the time",
         "mood_level": "Sometimes",
         "activity_level": "Very low (mostly sitting or lying down)",
         "sugar_intake": "Never",
@@ -86,13 +86,13 @@
       "inputs": {
         "weight": "80kg",
         "height": "180cm",
-        "has_children": "0",
-        "sleep_quality": "4",
-        "stress_level": "4",
-        "mood_level": "5",
-        "sugar_intake": "1",
-        "smoking_status": "0",
-        "supplement_usage": "1"
+        "has_children": "1",
+        "sleep_quality": "5",
+        "stress_level": "5",
+        "mood_level": "6",
+        "sugar_intake": "2",
+        "smoking_status": "1",
+        "supplement_usage": "2"
       },
       "expected_result": {
         "age": 24,
@@ -122,14 +122,14 @@
       "inputs": {
         "weight": "75kg",
         "height": "170cm",
-        "gender": "1",
+        "gender": "2",
         "sleep_quality": "2",
-        "mood_level": "3",
+        "mood_level": "4",
         "activity_level": "2",
         "sugar_intake": "3",
         "water_intake": "2",
-        "smoking_status": "0",
-        "supplement_usage": "0"
+        "smoking_status": "1",
+        "supplement_usage": "1"
       },
       "expected_result": {
         "age": 45,
@@ -158,12 +158,13 @@
         "sugar_intake": "Never"
       },
       "inputs": {
+        "weight": "65kg",
         "height": "165cm",
-        "gender": "0",
-        "has_children": "1",
-        "sleep_quality": "1",
-        "stress_level": "3",
-        "mood_level": "3",
+        "gender": "1",
+        "has_children": "2",
+        "sleep_quality": "2",
+        "stress_level": "4",
+        "mood_level": "4",
         "activity_level": "1",
         "water_intake": "3"
       },
@@ -186,23 +187,23 @@
     {
       "name": "Stressed Professional",
       "profile": "stressed_professional",
-      "description": "High-stress office worker with poor style habits",
+      "description": "High-stress office worker with poor lifestyle habits",
       "existing_data": {
         "age": 35,
         "stress_level": "Never",
         "sleep_quality": "Never",
-        "activity_level": "Very low (mostly sitting or lying"
+        "activity_level": "Very low (mostly sitting or lying down)"
       },
       "inputs": {
         "weight": "85kg",
         "height": "178cm",
-        "gender": "0",
-        "has_children": "0",
-        "mood_level": "1",
-        "sugar_intake": "4",
+        "gender": "1",
+        "has_children": "1",
+        "mood_level": "2",
+        "sugar_intake": "5",
         "water_intake": "1",
         "smoking_status": "3",
-        "supplement_usage": "0"
+        "supplement_usage": "1"
       },
       "expected_result": {
         "age": 35,
@@ -234,11 +235,11 @@
         "age": "29",
         "weight": "63kg",
         "height": "168cm",
-        "gender": "1",
-        "has_children": "0",
-        "sleep_quality": "5",
-        "stress_level": "5",
-        "mood_level": "5",
+        "gender": "2",
+        "has_children": "1",
+        "sleep_quality": "6",
+        "stress_level": "6",
+        "mood_level": "6",
         "activity_level": "4"
       },
       "expected_result": {
@@ -269,14 +270,14 @@
       "inputs": {
         "weight": "70kg",
         "height": "173cm",
-        "gender": "3",
-        "sleep_quality": "3",
+        "gender": "4",
+        "sleep_quality": "4",
         "stress_level": "2",
-        "mood_level": "4",
+        "mood_level": "5",
         "activity_level": "3",
         "sugar_intake": "2",
         "water_intake": "2",
-        "supplement_usage": "0"
+        "supplement_usage": "1"
       },
       "expected_result": {
         "age": 26,
@@ -305,15 +306,15 @@
       "inputs": {
         "weight": "refuse to answer",
         "height": "170cm",
-        "has_children": "2",
+        "has_children": "3",
         "sleep_quality": "2",
-        "stress_level": "3",
+        "stress_level": "4",
         "mood_level": "2",
         "activity_level": "2",
-        "sugar_intake": "1",
+        "sugar_intake": "2",
         "water_intake": "3",
-        "smoking_status": "0",
-        "supplement_usage": "1"
+        "smoking_status": "1",
+        "supplement_usage": "2"
       },
       "expected_result": {
         "age": 31,
@@ -340,16 +341,16 @@
         "age": "I'm 42 years old",
         "weight": "78.5 kilograms",
         "height": "5 feet 9 inches",
-        "gender": "0",
-        "has_children": "1",
-        "sleep_quality": "4",
-        "stress_level": "1",
-        "mood_level": "3",
+        "gender": "1",
+        "has_children": "2",
+        "sleep_quality": "5",
+        "stress_level": "2",
+        "mood_level": "4",
         "activity_level": "3",
         "sugar_intake": "3",
         "water_intake": "4",
         "smoking_status": "4",
-        "supplement_usage": "1"
+        "supplement_usage": "2"
       },
       "expected_result": {
         "age": 42,
