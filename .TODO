@@ -1,51 +1,7 @@
 ## Updated Todo
 
-✅ Increase the number of data field to 13 with 3 free form entry and 10 widget entry 
-☐ Add action recommendation at the end of the information collection. This is the aim of the project. Regardless of the available information you go down the list and with all of the available information we give you things you might want to do, put a leave a smoke reminder, take a mammogram and such
-
-## SHORTENED
-
-☐ Add health action recommendation system after data collection completion
-✅ Expand data collection to 13 fields (3 free-form, 10 widget-based)
-
-## REFACTORING IDEAS
-
-### High Impact Refactors
-☐ **Template Engine** (`utils/template_engine.py`)
-  - Scattered string replacement patterns across turkish_persona_agent.py, prompt_manager.py
-  - Current: `template.replace("{{VAR}}", value)` repeated 4-5 times per method
-  - Target: `replace_placeholders(template, **kwargs)` - single function call
-
-☐ **Debug Logger** (`utils/debug_logger.py`) 
-  - Inconsistent debug prints across multiple files
-  - Current: `if DEBUG_MODE: print(f"🇹🇷 DEBUG - {data}")` scattered everywhere
-  - Target: `debug.log("turkish_agent", "message", data)` - consistent formatting
-
-☐ **File Loader** (`utils/file_loader.py`)
-  - JSON/text loading duplicated in data_manager.py, turkish_persona_agent.py, prompt_manager.py
-  - Current: Different try/catch patterns in each file
-  - Target: `load_json(path)`, `load_text(path)` with consistent error handling
-
-### Medium Impact Refactors  
-☐ **Data Converter** (`utils/data_converter.py`)
-  - Type conversion logic hardcoded in data_manager.py
-  - Current: `if field == "age": int(value)` elif chains
-  - Target: Rule-based converter with field type definitions
-
-☐ **Error Handler** (`utils/error_handler.py`)
-  - `_handle_error()` pattern could be generic across modules
-  - Current: Each module has its own error handling style
-  - Target: Unified error logging/formatting utility
-
-☐ **Session Block Analyzer** (`utils/session_utils.py`)
-  - Session traversal logic repeated in turkish_persona_agent.py
-  - Current: `for block in reversed(session.blocks)` pattern duplicated
-  - Target: Helper methods for common session queries
-
-### Lower Impact Refactors
-☐ **Data Status Formatter** 
-  - Complex status building logic in DataManager could be more modular
-  - Extract formatting logic for reusability
-
----
- 
+☐ Create a test for core agent with 13 fields
+☐ Change core agent output to talk to Nora Turkish agent like an instructor
+☐ Add possible action recommendation depending on the data collected
+☐ Improve the Which question it should ask next rather than go in order to improve conversation flow and depending on recommendation/actions at hand
+☐ Final tie up and Turkish agent improvement to take core agent's instructions

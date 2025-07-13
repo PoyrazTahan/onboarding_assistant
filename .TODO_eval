@@ -1,0 +1,112 @@
+### SYSTEM EVALUATION & RELIABILITY
+
+#### Function Calling Reliability Evals
+
+☐ **Function Call Success Rate Monitoring** (`monitoring/function_evals.py`)
+
+- Track update_data() call rate vs user data inputs
+- Track ask_question() call rate vs expected questions
+- Target: 99.5%+ function call accuracy
+
+☐ **Function Parameter Validation Evals**
+
+- Validate field names are correct (no typos, valid field names)
+- Validate values match expected formats/types
+- Test with edge case inputs (empty strings, special characters)
+
+☐ **Function Sequence Validation Evals**
+
+- Ensure proper update_data → ask_question patterns
+- Detect missing function calls in conversation flow
+- Validate widget field detection accuracy
+
+#### Task Completion Evals
+
+☐ **13-Field Collection Success Rate** (`evals/completion_evals.py`)
+
+- Measure sessions completing all 13 fields
+- Track which fields most commonly fail
+- Target: 95%+ completion rate
+
+☐ **Widget Chain Completion Evals**
+
+- Test widget sequences of varying lengths (2-10 widgets)
+- Measure automatic vs manual continuation rates
+- Validate Turkish UI + English data consistency
+
+☐ **Conversation Flow Evals**
+
+- Test different user response patterns (short answers, long answers, questions)
+- Measure conversation length and efficiency
+- Validate proper conversation termination
+
+#### Robustness Evals
+
+☐ **Edge Case Input Testing** (`evals/robustness_evals.py`)
+
+- Test with typos, numbers as words, mixed languages
+- Test with non-cooperative users, joke responses
+- Test with incomplete/ambiguous answers
+- Target: Graceful handling of 90%+ edge cases
+
+☐ **Error Recovery Evals**
+
+- Test system recovery from widget failures
+- Test behavior with corrupted data.json
+- Test network/API failure scenarios
+- Validate fallback mechanisms work
+
+☐ **Load & Performance Evals**
+
+- Test with rapid user inputs
+- Measure response times under load
+- Test memory usage with long sessions
+
+#### Data Quality Evals
+
+☐ **Data Integrity Validation** (`evals/data_quality_evals.py`)
+
+- Validate all saved data matches user inputs
+- Test type conversions (age→int, weight→float)
+- Verify widget value/display mappings
+- Check for data corruption or loss
+
+☐ **Consistency Evals**
+
+- Test multiple sessions produce consistent behavior
+- Validate same inputs always produce same outputs
+- Test session state persistence and recovery
+
+#### Automated Eval Framework
+
+☐ **Eval Test Suite** (`evals/test_suite.py`)
+
+- Automated test runner for all eval categories
+- Generate eval reports with success/failure metrics
+- Integration with CI/CD for continuous monitoring
+
+☐ **Synthetic User Simulator** (`evals/user_simulator.py`)
+
+- Generate realistic user response patterns
+- Simulate various user personalities (cooperative, difficult, confused)
+- Run large-scale automated testing sessions
+
+☐ **Eval Metrics Dashboard** (`monitoring/eval_dashboard.py`)
+
+- Real-time reliability metrics visualization
+- Historical trend tracking for all eval categories
+- Alert system for degraded performance
+
+#### Production Monitoring Evals
+
+☐ **Live Session Monitoring** (`monitoring/live_evals.py`)
+
+- Track real user session success rates
+- Monitor function call patterns in production
+- Detect and alert on reliability degradation
+
+☐ **A/B Testing Framework** (`evals/ab_testing.py`)
+
+- Test function description variations
+- Compare different prompt engineering approaches
+- Measure impact of system changes on reliability
