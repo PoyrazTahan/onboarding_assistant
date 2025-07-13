@@ -68,7 +68,7 @@ class Agent:
         
         # Reload data to get latest state
         data = self.data_manager.load_data()
-        current_status = self.data_manager.get_data_status()
+        current_status = self.data_manager.get_data_status_with_insights()
         
         # Get updated conversation history
         conversation_history = self.session.get_conversation_history()

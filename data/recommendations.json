@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "timestamp": "2025-07-13T19:39:21.677848",
+    "session_type": "health_data_collection",
+    "planner_agent_version": "v1.0"
+  },
+  "user_profile": {
+    "basic_info": {
+      "age": 35,
+      "gender": "Female",
+      "bmi": 24.6,
+      "bmi_category": "Normal"
+    },
+    "health_indicators": {
+      "smoking_status": "3-4 cigarettes per day",
+      "activity_level": "Low (short walks, occasionally standing)",
+      "sleep_quality": "Never",
+      "stress_level": "Sometimes",
+      "water_intake": "7-8 glasses (1400-1600 ml)",
+      "has_children": "No"
+    },
+    "all_data": {
+      "age": 35,
+      "weight": 78.0,
+      "height": 178.0,
+      "gender": "Female",
+      "has_children": "No",
+      "sleep_quality": "Never",
+      "stress_level": "Sometimes",
+      "mood_level": "Never",
+      "activity_level": "Low (short walks, occasionally standing)",
+      "sugar_intake": "Never",
+      "water_intake": "7-8 glasses (1400-1600 ml)",
+      "smoking_status": "3-4 cigarettes per day",
+      "supplement_usage": "Yes"
+    }
+  },
+  "recommendations": {
+    "structured_output": {
+      "high_priority": {
+        "explanation": "Your smoking habit combined with low activity level puts you at health risk",
+        "actions": [
+          "quit_smoking",
+          "movement_break",
+          "regular_checkup"
+        ]
+      },
+      "medium_priority": {
+        "explanation": "Your water intake is below recommended levels for your lifestyle, and hydration is important.",
+        "actions": [
+          "drink_water",
+          "healthy_eating"
+        ]
+      },
+      "low_priority": {
+        "explanation": "General wellness recommendations for long-term health and mental well-being.",
+        "actions": [
+          "get_sunlight",
+          "take_vitamins"
+        ]
+      }
+    },
+    "available_actions_count": {
+      "reminders": 9,
+      "specialists": 0
+    },
+    "nora_instructions": ""
+  },
+  "justifications": {
+    "key_risk_factors": [
+      "Heavy smoking: 3-4 cigarettes per day",
+      "Mental health concerns: poor sleep and high stress"
+    ],
+    "health_insights": "Current BMI: 24.6 (Normal)",
+    "recommendation_reasoning": "Based on user profile analysis and available health action conditions"
+  }
+}

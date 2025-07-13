@@ -151,9 +151,9 @@ class DataManager:
         ]
         
         next_action = [
-            "\n=== WORKFLOW GUIDANCE ===",
-            f"• NEXT ACTION: Ask question for '{missing[0]}' field" if missing else 
-            "• NEXT ACTION: All data collected, end conversation"
+            "\n=== PLANNER GUIDANCE ===",
+            f"• MISSING FIELDS: {', '.join(missing[:5])}" + ("..." if len(missing) > 5 else "") if missing else 
+            "• STATUS: All data collected, ready for recommendations"
         ]
         
         return "\n".join(recorded_section + missing_section + next_action)
@@ -231,7 +231,7 @@ class DataManager:
     
     @kernel_function(
         name="ask_question",
-        description="Use this function, and ONLY this function, to ask the user a question. Your primary goal is to fill all data fields one by one. Call this function to ask the single next question in the data collection process."
+        description="Ask a strategic question about a specific field. CRITICAL: Only call this function ONCE per response - never ask multiple questions simultaneously. As PLANNER AGENT, use strategic thinking to choose which field to ask about based on conversation context, user concerns, related health patterns, and available recommendations. Always include brief reasoning for your choice in your response message. You must use this function to ask questions so we can track which field you're targeting."
     )
     def ask_question(
         self,
@@ -265,4 +265,334 @@ class DataManager:
         
         # STAGE 2 TRACKING: Record successful execution  
         self._add_to_session("ask_question", {"field": field, "message": message}, result)
+        return result
+    
+    def _calculate_bmi(self, data):
+        """Calculate BMI if weight and height available - simple, no try-catch"""
+        weight = data.get("weight")
+        height = data.get("height") 
+        
+        if weight is None or height is None:
+            return None
+            
+        # Direct validation - fail fast if invalid data
+        if weight <= 0 or height <= 0:
+            return None
+            
+        # Convert height to meters and calculate BMI
+        height_m = height / 100
+        return round(weight / (height_m * height_m), 1)
+    
+    def _get_bmi_category(self, bmi):
+        """Get BMI category - simple conditions, no nested logic"""
+        if bmi < 18.5:
+            return "Underweight"
+        if bmi < 25:
+            return "Normal" 
+        if bmi < 30:
+            return "Overweight"
+        return "Obese"
+    
+    def _load_actions_data(self):
+        """Load actions.json for recommendations - fail fast if missing"""
+        with open("data/actions.json", 'r') as f:
+            return json.load(f)
+    
+    def _get_relevant_actions(self, data):
+        """Process actions.json and return relevant recommendations based on current data"""
+        actions_data = self._load_actions_data()
+        reminders = actions_data["recommendations"]["reminders"]
+        specialists = actions_data["recommendations"]["specialists"]
+        
+        # BMI-based insights
+        bmi = self._calculate_bmi(data)
+        bmi_insight = ""
+        if bmi:
+            category = self._get_bmi_category(bmi)
+            bmi_insight = f"Current BMI: {bmi} ({category})"
+        else:
+            missing_fields = []
+            if data.get("weight") is None:
+                missing_fields.append("weight")
+            if data.get("height") is None: 
+                missing_fields.append("height")
+            bmi_insight = f"BMI: Not available (missing {', '.join(missing_fields)})"
+        
+        # Simple condition matching - no nested loops
+        applicable_reminders = []
+        for reminder in reminders:
+            conditions = reminder.get("conditions", {})
+            
+            # BMI condition check
+            if "bmi_over_25" in conditions and bmi and bmi > 25:
+                applicable_reminders.append(reminder)
+                continue
+                
+            # Always recommend items
+            if conditions.get("always_recommend"):
+                applicable_reminders.append(reminder)
+                continue
+                
+            # Gender-specific conditions
+            if "gender" in conditions and data.get("gender") == conditions["gender"]:
+                # Age condition for gender-specific items
+                if "age_over" in conditions:
+                    age = data.get("age")
+                    if age and age > conditions["age_over"]:
+                        applicable_reminders.append(reminder)
+                else:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Water intake condition
+            if "water_intake_less_than" in conditions:
+                water = data.get("water_intake")
+                target = conditions["water_intake_less_than"]
+                if water and water != target and water not in ["7-8 glasses (1400-1600 ml)", "More than 8 glasses (+1600 ml)"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Supplement usage condition
+            if "supplement_usage" in conditions and data.get("supplement_usage") == conditions["supplement_usage"]:
+                applicable_reminders.append(reminder)
+                continue
+                
+            # Smoking status condition (not in specific list)
+            if "smoking_status_not" in conditions:
+                smoking = data.get("smoking_status")
+                if smoking and smoking not in conditions["smoking_status_not"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Low sleep quality condition
+            if "sleep_quality_low" in conditions:
+                sleep = data.get("sleep_quality")
+                if sleep and sleep in conditions["sleep_quality_low"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Low mood condition
+            if "mood_level_low" in conditions:
+                mood = data.get("mood_level")
+                if mood and mood in conditions["mood_level_low"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # High sugar intake condition
+            if "sugar_intake_high" in conditions:
+                sugar = data.get("sugar_intake")
+                if sugar and sugar in conditions["sugar_intake_high"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Low stress (high stress level) condition
+            if "stress_level_low" in conditions:
+                stress = data.get("stress_level")
+                if stress and stress in conditions["stress_level_low"]:
+                    applicable_reminders.append(reminder)
+                continue
+                
+            # Low activity level condition
+            if "activity_level_low" in conditions:
+                activity = data.get("activity_level")
+                if activity and activity in conditions["activity_level_low"]:
+                    applicable_reminders.append(reminder)
+                continue
+        
+        # Applicable specialists - simple matching
+        applicable_specialists = []
+        for specialist in specialists:
+            conditions = specialist.get("conditions", {})
+            
+            # Has children condition
+            if "has_children" in conditions:
+                children = data.get("has_children")
+                if children and children in conditions["has_children"]:
+                    applicable_specialists.append(specialist)
+        
+        return {
+            "bmi_insight": bmi_insight,
+            "applicable_reminders": applicable_reminders,
+            "applicable_specialists": applicable_specialists
+        }
+    
+    def get_data_status_with_insights(self) -> str:
+        """Enhanced data status with BMI and health insights for PLANNER AGENT"""
+        data = self.load_data()
+        
+        # Get basic data status sections
+        filled = {key: value for key, value in data.items() if value is not None}
+        missing = [key for key, value in data.items() if value is None]
+        
+        # Build enhanced sections
+        recorded_section = [
+            "=== RECORDED USER DATA ===",
+            "• No data recorded yet" if not filled else 
+            "\n".join([f"- {field.capitalize()}: {value}" for field, value in filled.items()])
+        ]
+        
+        missing_section = [
+            "\n=== MISSING FIELDS ===",
+            "• All fields complete!" if not missing else 
+            "\n".join([f"• {field.capitalize()}: null" for field in missing])
+        ]
+        
+        # Add health insights section
+        insights = self._get_relevant_actions(data)
+        health_section = [
+            f"\n=== HEALTH INSIGHTS ===",
+            f"• {insights['bmi_insight']}",
+            f"• Available recommendations: {len(insights['applicable_reminders'])} reminders, {len(insights['applicable_specialists'])} specialists"
+        ]
+        
+        next_action = [
+            "\n=== PLANNER AGENT GUIDANCE ===",
+            f"• NEXT ACTION: Strategic question for '{missing[0]}' field OR related field based on context" if missing else 
+            "• NEXT ACTION: Provide personalized recommendations - call provide_recommendations()"
+        ]
+        
+        return "\n".join(recorded_section + missing_section + health_section + next_action)
+    
+    @kernel_function(
+        name="provide_recommendations",
+        description="Provide final health recommendations and complete the planning session. Use this when you have sufficient data to give personalized health advice and want to end the data collection phase."
+    )
+    def _parse_recommendations(self, recommendations_text):
+        """Parse structured recommendation format - simple regex approach"""
+        import re
+        from datetime import datetime
+        
+        # Split into recommendation part and Nora instructions
+        parts = recommendations_text.split("</FINAL_RECOMMENDATION>")
+        recommendation_xml = parts[0] + "</FINAL_RECOMMENDATION>"
+        nora_instructions = parts[1].strip() if len(parts) > 1 else ""
+        
+        # Parse each priority level - simple regex patterns
+        priority_pattern = r'<(\w+_priority)>\s*<explanation>(.*?)</explanation>\s*<action_list>\[(.*?)\]</action_list>\s*</\w+_priority>'
+        matches = re.findall(priority_pattern, recommendation_xml, re.DOTALL)
+        
+        parsed_recommendations = {}
+        for priority_level, explanation, actions in matches:
+            # Clean up action list - split by comma and strip whitespace
+            action_list = [action.strip() for action in actions.split(',')]
+            parsed_recommendations[priority_level] = {
+                "explanation": explanation.strip(),
+                "actions": action_list
+            }
+        
+        return parsed_recommendations, nora_instructions.replace("Nora,", "").strip()
+    
+    def _save_recommendations(self, parsed_recs, nora_instructions, user_data, insights):
+        """Save structured recommendations to data/recommendations.json"""
+        from datetime import datetime
+        
+        # Build comprehensive recommendation record
+        recommendation_record = {
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "session_type": "health_data_collection",
+                "planner_agent_version": "v1.0"
+            },
+            "user_profile": {
+                "basic_info": {
+                    "age": user_data.get("age"),
+                    "gender": user_data.get("gender"),
+                    "bmi": self._calculate_bmi(user_data),
+                    "bmi_category": self._get_bmi_category(self._calculate_bmi(user_data)) if self._calculate_bmi(user_data) else None
+                },
+                "health_indicators": {
+                    "smoking_status": user_data.get("smoking_status"),
+                    "activity_level": user_data.get("activity_level"),
+                    "sleep_quality": user_data.get("sleep_quality"),
+                    "stress_level": user_data.get("stress_level"),
+                    "water_intake": user_data.get("water_intake"),
+                    "has_children": user_data.get("has_children")
+                },
+                "all_data": user_data
+            },
+            "recommendations": {
+                "structured_output": parsed_recs,
+                "available_actions_count": {
+                    "reminders": len(insights['applicable_reminders']),
+                    "specialists": len(insights['applicable_specialists'])
+                },
+                "nora_instructions": nora_instructions
+            },
+            "justifications": {
+                "key_risk_factors": self._identify_risk_factors(user_data),
+                "health_insights": insights['bmi_insight'],
+                "recommendation_reasoning": "Based on user profile analysis and available health action conditions"
+            }
+        }
+        
+        # Save to recommendations.json - fail fast if directory issue
+        with open("data/recommendations.json", 'w') as f:
+            json.dump(recommendation_record, f, indent=2)
+        
+        return recommendation_record
+    
+    def _identify_risk_factors(self, user_data):
+        """Identify key risk factors for justification"""
+        risk_factors = []
+        
+        # High priority risks
+        smoking = user_data.get("smoking_status")
+        if smoking and smoking not in ["No", "Social smoker (few days a week)"]:
+            risk_factors.append(f"Heavy smoking: {smoking}")
+        
+        # BMI risks
+        bmi = self._calculate_bmi(user_data)
+        if bmi:
+            if bmi >= 30:
+                risk_factors.append(f"Obesity: BMI {bmi}")
+            elif bmi >= 25:
+                risk_factors.append(f"Overweight: BMI {bmi}")
+            elif bmi < 18.5:
+                risk_factors.append(f"Underweight: BMI {bmi}")
+        
+        # Pregnancy considerations
+        children = user_data.get("has_children")
+        if children == "Pregnant":
+            risk_factors.append("Pregnancy: requires specialized health attention")
+        
+        # Low water intake
+        water = user_data.get("water_intake")
+        if water and "1-2 glasses" in water:
+            risk_factors.append("Severe dehydration risk: very low water intake")
+        
+        # Mental health indicators
+        sleep = user_data.get("sleep_quality")
+        stress = user_data.get("stress_level")
+        if sleep in ["Never", "Sometimes"] and stress in ["Never", "Sometimes"]:
+            risk_factors.append("Mental health concerns: poor sleep and high stress")
+        
+        return risk_factors if risk_factors else ["No major risk factors identified"]
+
+    @kernel_function(
+        name="provide_recommendations",
+        description="Provide final health recommendations and complete the planning session. Use this when you have sufficient data to give personalized health advice and want to end the data collection phase."
+    )
+    def provide_recommendations(
+        self,
+        recommendations: str
+    ) -> str:
+        """Complete planning phase with structured recommendations and save to file"""
+        data = self.load_data()
+        insights = self._get_relevant_actions(data)
+        
+        # Parse the structured recommendations
+        parsed_recs, nora_instructions = self._parse_recommendations(recommendations)
+        
+        # Save structured recommendations to file
+        recommendation_record = self._save_recommendations(parsed_recs, nora_instructions, data, insights)
+        
+        result = f"[RECOMMENDATIONS PROVIDED] Planning session complete.\n\nUser recommendations:\n{recommendations}\n\nAvailable actions: {len(insights['applicable_reminders'])} reminders, {len(insights['applicable_specialists'])} specialists\n\n💾 Recommendations saved to: data/recommendations.json"
+        
+        self._log_function_call("provide_recommendations",
+                               {"recommendations": recommendations, "user_data": data},
+                               {"result": result, "available_actions": insights, "saved_file": "data/recommendations.json"},
+                               {"success": True, "session_complete": True})
+        
+        # STAGE 2 TRACKING: Record completion
+        self._add_to_session("provide_recommendations", {"recommendations": recommendations}, result)
         return result
