@@ -18,23 +18,53 @@ A sophisticated health data collection and recommendation system that uses strat
 #### 1. Open Terminal (macOS)
 - Press `Cmd + Space`, type "Terminal", press Enter
 
-#### 2. Run Setup Script
+#### 2. Create Setup Directory and Script
 ```bash
-# Run setup script (installs everything including conda environment and dependencies)
+# Create heltia directory in your home folder
+mkdir ~/heltia
+
+# Create setup script file
+touch ~/heltia/setup.sh
+
+# Make it executable
+chmod +x ~/heltia/setup.sh
+
+# Open the heltia directory in Finder
+open ~/heltia
+```
+
+#### 3. Copy Setup Script Content
+1. **Open the setup.sh file** you just created (double-click it in Finder)
+2. **Copy the setup script content** from: https://github.com/PoyrazTahan/onboarding_assistant/blob/main/setup.sh
+3. **Paste the content** into your setup.sh file and save it
+
+#### 4. Run Setup Script
+```bash
+# Navigate to heltia directory and run setup
+cd ~/heltia
 ./setup.sh
 ```
 
-#### 3. Add Your OpenAI API Key
-**Make sure you're in the project folder, then run these commands:**
+#### 5. Add Your OpenAI API Key
+**After setup completes, edit the .env file:**
 ```bash
-# Create environment file
-touch .env
-
-# Add your OpenAI API key to .env file (replace with your actual key)
-echo "OPENAI_API_KEY=sk-your-actual-openai-api-key-here" >> .env
+# Open the environment file
+nano ~/heltia/onboarding_assistant/.env
 ```
 
-**⚠️ Important**: Replace `sk-your-actual-openai-api-key-here` with your real OpenAI API key from https://platform.openai.com/api-keys
+**Replace `your-openai-api-key-here` with your actual OpenAI API key from https://platform.openai.com/api-keys**
+
+#### 6. Activate Environment and Start Using
+```bash
+# Activate the conda environment
+conda activate planner_agent
+
+# Navigate to project directory
+cd ~/heltia/onboarding_assistant
+
+# Run the PLANNER AGENT
+python app.py
+```
 
 ### Basic Usage
 ```bash
@@ -321,26 +351,54 @@ Kilon kaç kilo? 😊
 
 ### Common Issues
 
-**1. OpenAI API Key Missing**
+**1. Setup Script Permission Denied**
 ```bash
-export OPENAI_API_KEY="your-key-here"
+# Make sure the script is executable
+chmod +x setup.sh
 ```
 
-**2. Widget Not Displaying**
+**2. Conda Command Not Found (After Setup)**
+```bash
+# Restart terminal or source conda
+source ~/.bashrc  # or ~/.zshrc for zsh users
+# OR restart Terminal app completely
+```
+
+**3. OpenAI API Key Missing**
+```bash
+# Edit the .env file and add your key
+nano ~/heltia/onboarding_assistant/.env
+```
+
+**4. Environment Activation Issues**
+```bash
+# If conda activate doesn't work, try:
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate planner_agent
+```
+
+**5. Widget Not Displaying**
 - Check `data/widget_config.json` for field configuration
 - Verify field is enabled: `"enabled": true`
 
-**3. Test Mode Not Working**
-- Verify `data/test.json` contains all 13 fields
+**6. Test Mode Not Working**
+- Verify `data/test.json` contains test scenarios
 - Check JSON syntax validity
 
-**4. Turkish Agent Errors**
+**7. Turkish Agent Errors**
 - Ensure `prompts/templates/turkish_persona_prompt.txt` exists
 - Check for template variable mismatches
 
-**5. Empty Recommendations**
-- Verify `data/actions.json` has appropriate conditions
-- Check if user data matches any recommendation triggers
+**8. Setup Script Fails**
+```bash
+# If setup fails, try running individual steps:
+cd ~/heltia
+git clone https://github.com/PoyrazTahan/onboarding_assistant.git
+cd onboarding_assistant
+conda create -n planner_agent python=3.11 -y
+conda activate planner_agent
+pip install -r requirements.txt
+```
 
 ### Debug Commands
 ```bash
