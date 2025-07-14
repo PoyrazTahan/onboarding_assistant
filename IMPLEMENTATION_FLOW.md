@@ -346,8 +346,6 @@ sequenceDiagram
     CH->>UI: print_agent_message("Perfect! Kilonu kaydettim 📝")
     CH->>UI: print_agent_message("Şimdi boyunu merak ediyorum!")
 
-    style TA fill:#7b1fa2,stroke:#ffffff,color:#ffffff
-    style LLM fill:#1976d2,stroke:#ffffff,color:#ffffff
 ```
 
 ## Stage Manager & Widget Flagging Architecture
