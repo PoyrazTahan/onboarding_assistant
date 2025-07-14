@@ -8,19 +8,21 @@ This document provides a visual reference for the onboarding assistant's archite
 
 ```mermaid
 graph LR
-    USER[User Input<br/>Turkish/English] --> CORE[Core Agent<br/>English Logic]
-    CORE --> TURKISH[Turkish Agent<br/>Context + Translation]
+    USER[User Input<br/>Turkish/English] --> PLANNER[PLANNER AGENT<br/>Strategic Health Logic]
+    PLANNER --> TURKISH[Turkish Agent<br/>Context + Translation]
     TURKISH --> UI[User Interface<br/>Turkish Output]
-    
-    CORE --> WIDGETS[Widget System<br/>Data Collection]
+
+    PLANNER --> WIDGETS[Widget System<br/>Data Collection]
+    PLANNER --> RECOMMENDATIONS[Health Recommendations<br/>Priority-Based]
     WIDGETS --> TURKISH
-    
-    style CORE fill:#1976d2,stroke:#ffffff,color:#ffffff
+
+    style PLANNER fill:#1976d2,stroke:#ffffff,color:#ffffff
     style TURKISH fill:#7b1fa2,stroke:#ffffff,color:#ffffff
     style WIDGETS fill:#f57c00,stroke:#ffffff,color:#ffffff
+    style RECOMMENDATIONS fill:#4caf50,stroke:#ffffff,color:#ffffff
 ```
 
-**Key Flow**: User speaks any language → Core Agent processes in English → Turkish Agent adds personality and translates → User sees warm Turkish responses
+**Key Flow**: User speaks any language → PLANNER AGENT processes strategically → Turkish Agent adds empathy and translates → User sees warm Turkish responses with personalized health recommendations
 
 ## System Architecture Flow (Detailed)
 
@@ -43,19 +45,22 @@ graph TD
         TURKISH_AGENT --> |"Integrates with telemetry"| TELEMETRY[monitoring/telemetry.py]
     end
 
-    subgraph "Core Logic Layer"
+    subgraph "PLANNER AGENT Layer (Enhanced)"
         AGENT --> |"Sets up kernel"| REGISTRY[core/tool_registry.py]
         AGENT --> |"Loads templates"| PROMPT[prompts/prompt_manager.py]
         AGENT --> |"Manages sessions"| SESSION[memory/session_manager.py]
+        AGENT --> |"Direct chat completion"| CHAT[Direct Chat Service<br/>No competing functions]
         AGENT --> |"Tracks telemetry"| TELEMETRY
         SESSION --> |"Includes stage manager"| STAGE_MGR[ConversationStageManager<br/>Widget flagging & tracking]
         PROMPT --> |"Loads greeting instructions"| GREETING_TEMPLATES[prompts/templates/greeting_files]
     end
 
-    subgraph "Tool Layer"
-        REGISTRY --> |"Registers functions"| DATAMGR[tools/data_manager.py]
-        DATAMGR --> |"Loads data"| DATA[("data/data.json")]
+    subgraph "Enhanced Tool Layer"
+        REGISTRY --> |"Registers functions"| DATAMGR[tools/data_manager.py<br/>BMI + Health Insights]
+        DATAMGR --> |"Loads 13-field data"| DATA[("data/data.json")]
         DATAMGR --> |"Loads widget config"| WCONFIG[("data/widget_config.json")]
+        DATAMGR --> |"Loads health actions"| ACTIONS[("data/actions.json")]
+        DATAMGR --> |"Strategic recommendations"| RECOMMENDATIONS[("data/recommendations.json")]
         DATAMGR --> |"Flags widgets via stage manager"| STAGE_MGR
         STAGE_MGR --> |"Triggers post-response"| WIDGET[ui/widget_handler.py]
     end
@@ -66,9 +71,11 @@ graph TD
         CONV --> |"Loads test data"| TESTDATA[("data/test.json")]
     end
 
-    subgraph "Data Layer"
+    subgraph "Enhanced Data Layer"
         DATA
         WCONFIG
+        ACTIONS
+        RECOMMENDATIONS
         TESTDATA
         SESSION_FILES[("data/sessions/*.json")]
         TELEMETRY_FILES[("data/telemetry/*")]
@@ -87,13 +94,12 @@ graph TD
     DATAMGR -->|"Widget field detected"| WIDGET
     WIDGET -->|"Auto-selects in test mode"| WCONFIG
     WIDGET -->|"Reads test values"| TESTDATA
-    
+
     %% Turkish Agent Flow
     SESSION_CONTEXT --> TURKISH_RESPONSE
     GREETING_TEMPLATES --> TURKISH_AGENT
 
     style TURKISH_AGENT fill:#7b1fa2,stroke:#ffffff,color:#ffffff
-    style TURKISH_PROMPT fill:#7b1fa2,stroke:#ffffff,color:#ffffff
     style TURKISH_RESPONSE fill:#7b1fa2,stroke:#ffffff,color:#ffffff
     style GREETING_TEMPLATES fill:#f57c00,stroke:#ffffff,color:#ffffff
 ```
@@ -102,15 +108,15 @@ graph TD
 
 ```mermaid
 graph TB
-    UI[🎯 UI Layer<br/>Display & Interaction] 
+    UI[🎯 UI Layer<br/>Display & Interaction]
     TRANSLATION[🌍 Translation Layer<br/>Turkish Persona Agent]
     BUSINESS[🧠 Business Logic<br/>Core Agent & Data]
     INFRA[🔧 Infrastructure<br/>Sessions & Monitoring]
-    
+
     UI --> TRANSLATION
     TRANSLATION --> BUSINESS
     BUSINESS --> INFRA
-    
+
     style TRANSLATION fill:#7b1fa2,stroke:#ffffff,color:#ffffff
     style BUSINESS fill:#1976d2,stroke:#ffffff,color:#ffffff
     style UI fill:#388e3c,stroke:#ffffff,color:#ffffff
@@ -190,7 +196,7 @@ graph LR
     FLAGS --> DEBUG[--debug<br/>Verbose]
     FLAGS --> CORE[--core-agent<br/>English Only]
     FLAGS --> NORMAL[Normal<br/>Turkish UI]
-    
+
     style TEST fill:#388e3c,stroke:#ffffff,color:#ffffff
     style DEBUG fill:#f57c00,stroke:#ffffff,color:#ffffff
     style CORE fill:#1976d2,stroke:#ffffff,color:#ffffff
@@ -256,11 +262,11 @@ graph TD
 
 ```mermaid
 graph LR
-    CORE[Core Agent<br/>Ask Question] --> WIDGET[Widget<br/>Collects Data]
+    PLANNER[PLANNER AGENT<br/>Ask Question] --> WIDGET[Widget<br/>Collects Data]
     WIDGET --> TURKISH[Turkish Agent<br/>Translates Response]
     TURKISH --> USER[User Sees<br/>Turkish UI]
-    
-    style CORE fill:#1976d2,stroke:#ffffff,color:#ffffff
+
+    style PLANNER fill:#1976d2,stroke:#ffffff,color:#ffffff
     style WIDGET fill:#f57c00,stroke:#ffffff,color:#ffffff
     style TURKISH fill:#7b1fa2,stroke:#ffffff,color:#ffffff
     style USER fill:#388e3c,stroke:#ffffff,color:#ffffff
@@ -449,39 +455,49 @@ graph TD
 
 ## Key Design Patterns
 
-### 1. **Module-Level Mode Detection**
+### 1. **PLANNER AGENT Strategic Architecture (NEW)**
+
+- Strategic question ordering based on user context (stress→sleep, pregnancy→supplements)
+- BMI calculation and health insights for intelligent recommendations
+- Priority-based recommendation system (HIGH/MEDIUM/LOW)
+- Actions.json condition matching for personalized advice
+
+### 2. **Direct Chat Completion (Critical Fix)**
+
+- Eliminated competing chat_plugin functions causing random LLM behavior
+- Direct `chat_service.get_chat_message_contents()` with FunctionChoiceBehavior.Auto()
+- Fixes inconsistent widget chains and data persistence issues
+
+### 3. **13-Field Enhanced Data Model**
+
+- Expanded from basic fields to comprehensive health data collection
+- Enhanced field validation and type conversion (BMI calculation)
+- Strategic completion detection for recommendation phase
+
+### 4. **Module-Level Mode Detection**
 
 - `TEST_MODE = "--test" in sys.argv` in `ui/widget_handler.py`
 - Avoids parameter threading through multiple layers
 - Supports Jupyter override: `ui.widget_handler.TEST_MODE = True`
 
-### 2. **Dual Tracking Architecture**
+### 5. **Dual Tracking Architecture**
 
 - **Stage 1 (Agent)**: Tracks LLM requests and responses
 - **Stage 2 (DataManager)**: Tracks actual function execution
 - Purpose: Debug LLM behavior vs execution vs routing issues
 
-### 3. **Lazy Loading Pattern**
-
-- WidgetHandler only loaded when widget field detected
-- Prevents unnecessary imports and initialization
-
-### 4. **Fail-Fast Principle**
-
-- Template loading fails immediately if files missing
-- No silent fallbacks that hide configuration issues
-
-### 5. **Hidden Context Injection Pattern**
+### 6. **Hidden Context Injection Pattern**
 
 - Widget completions inject hidden context to prevent duplicate LLM calls
 - LLM receives: `"CRITICAL: DO NOT call update_data for weight - it was already updated via widget to 70kg"`
 - Context is invisible to chat UI but guides LLM behavior
 - Prevents double-updating data fields from widget automation
 
-### 6. **Widget Block Separation**
+### 7. **Widget Block Separation with Recursion**
 
 - Each question-answer cycle gets its own conversation block
 - Widget execution happens BETWEEN blocks, not within blocks
+- Recursive widget handling for broken widget call chains
 - Maintains clean conversation flow while preserving all functionality
 
 ## Hidden Context Injection Mechanism
@@ -518,40 +534,41 @@ This mechanism ensures:
 - **LLM guidance**: Clear instructions prevent confused behavior
 - **State synchronization**: Widget completion data is properly cleared after use
 
-## Key Design Patterns (Updated)
+## Additional Design Patterns (Updated)
 
-### 7. **Turkish Agent Translation Layer (NEW)**
+### 8. **Turkish Agent Translation Layer with PLANNER Integration (Enhanced)**
 
-- **English-Only Core**: Core agent always responds in English regardless of user language
-- **Context-Aware Translation**: Turkish agent analyzes full conversation context and data status
-- **Multi-Message Responses**: Single English response becomes multiple Turkish messages for natural flow
-- **Empathetic Personality**: Adds warmth, empathy, and age-appropriate reactions
+- **PLANNER-Aware Translation**: Turkish agent understands PLANNER's strategic decisions and explains them naturally
+- **Context-Aware Empathy**: Analyzes BMI, health insights, and strategic question choices for appropriate responses
+- **Multi-Message Responses**: Single English response becomes multiple Turkish messages for natural WhatsApp-style flow
+- **Strategic Explanation**: Explains why PLANNER chose specific questions (stress→sleep, BMI→activity)
 - **Core Agent Bypass**: `--core-agent` mode allows debugging without translation layer
 
-### 8. **Instruction Architecture (NEW)**
+### 9. **Recommendation Processing Pipeline (NEW)**
 
-- **Greeting Instructions**: Core agent sends instructions to Turkish agent, not direct user messages
-- **Architectural Clarity**: Clear separation between backend logic (English) and frontend personality (Turkish)
-- **Language Constraint**: Core agent strictly forbidden from using Turkish, maintains clean separation
+- **XML Parsing**: Structured recommendation parsing from PLANNER AGENT responses
+- **Priority Filtering**: Only HIGH priority recommendations shown to users
+- **File Persistence**: Saves structured recommendations to `data/recommendations.json`
+- **Justification Tracking**: Records decision rationale and risk factor analysis
 
 ## File Responsibility Summary (Updated)
 
-| File                        | Primary Responsibility                    | Secondary Features                        |
-| --------------------------- | ----------------------------------------- | ----------------------------------------- |
-| `app.py`                    | ConversationHandler orchestration, Turkish agent integration | Post-response widget execution, CLI entry, mode detection |
-| `core/agent.py`             | LLM interaction, hidden context injection | Session management, block completion      |
-| `core/turkish_persona_agent.py` | **Context-aware Turkish translation, empathetic responses** | **Multi-message generation, data status analysis** |
-| `core/tool_registry.py`     | Kernel setup, function registration       | Debug prints, telemetry setup             |
-| `tools/data_manager.py`     | Data operations, widget flagging          | Stage manager integration, dual tracking  |
-| `ui/widget_handler.py`      | Widget UI, test automation                | Post-response execution, auto-updates     |
-| `ui/chat_ui.py`             | Pure display functions                    | Terminal formatting, widget boxes         |
-| `memory/session_manager.py` | Session blocks, ConversationStageManager  | Widget flagging, hidden context storage   |
-| `prompts/prompt_manager.py` | Template loading, prompt building         | Greeting selection, debug info            |
-| `prompts/templates/system_prompt.txt` | **Core agent English-only behavior** | **Language constraint enforcement** |
-| `prompts/templates/turkish_persona_prompt.txt` | **Turkish personality and empathy rules** | **Multi-message reasoning, completion detection** |
-| `prompts/templates/greeting_new.txt` | **Instructions to Turkish agent for new users** | **Architectural clarity** |
-| `prompts/templates/greeting_return.txt` | **Instructions to Turkish agent for returning users** | **User state awareness** |
-| `monitoring/telemetry.py`   | Event capture, performance tracking       | Widget execution tracking, Turkish agent logging |
+| File                                           | Primary Responsibility                                               | Secondary Features                                                   |
+| ---------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `app.py`                                       | ConversationHandler orchestration, Turkish agent integration         | Post-response widget execution, CLI entry, mode detection            |
+| `core/agent.py`                                | **Direct chat completion, hidden context injection**                 | **Session management, block completion**                             |
+| `core/turkish_persona_agent.py`                | **PLANNER-aware Turkish translation, strategic empathy**             | **Multi-message generation, BMI context analysis**                   |
+| `core/tool_registry.py`                        | **Kernel setup, function registration (no competing functions)**     | Debug prints, telemetry setup                                        |
+| `tools/data_manager.py`                        | **PLANNER AGENT operations, BMI calculation, recommendation engine** | **13-field validation, actions.json processing, strategic insights** |
+| `ui/widget_handler.py`                         | Widget UI, test automation                                           | Post-response execution, auto-updates                                |
+| `ui/chat_ui.py`                                | Pure display functions                                               | Terminal formatting, widget boxes                                    |
+| `memory/session_manager.py`                    | Session blocks, ConversationStageManager                             | Widget flagging, hidden context storage                              |
+| `prompts/prompt_manager.py`                    | Template loading, prompt building                                    | Greeting selection, debug info                                       |
+| `prompts/templates/system_prompt.txt`          | **PLANNER AGENT strategic health logic**                             | **BMI-driven decisions, actions.json awareness**                     |
+| `prompts/templates/turkish_persona_prompt.txt` | **Empathetic Turkish persona with PLANNER integration**              | **Strategic explanation, WhatsApp-style responses**                  |
+| `prompts/templates/greeting_new.txt`           | **Instructions to Turkish agent for new users**                      | **Architectural clarity**                                            |
+| `prompts/templates/greeting_return.txt`        | **Instructions to Turkish agent for returning users**                | **User state awareness**                                             |
+| `monitoring/telemetry.py`                      | Event capture, performance tracking                                  | Widget execution tracking, Turkish agent logging                     |
 
 ## Architecture Principles
 
