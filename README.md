@@ -13,54 +13,54 @@ A sophisticated health data collection and recommendation system that uses strat
 
 ## 🚀 Quick Start
 
-### Installation
+### Automatic Setup (Recommended)
 
-#### 1. Open Terminal (macOS)
-
-- Press `Cmd + Space`, type "Terminal", press Enter
-
-#### 2. Create Setup Directory and Script
+**One-line setup for macOS:**
 
 ```bash
-# Create heltia directory in your home folder
-mkdir ~/heltia
-
-# Create setup script file
-touch ~/heltia/setup.sh
-
-# Make it executable
-chmod +x ~/heltia/setup.sh
-
-# Open the heltia directory in Finder
-open ~/heltia
+# Open Terminal (Cmd+Space, type "Terminal")
+# Run this single command:
+curl -fsSL https://raw.githubusercontent.com/PoyrazTahan/onboarding_assistant/main/setup.sh | bash
 ```
 
-#### 3. Copy Setup Script Content
+This will:
+- ✅ Install Homebrew (if needed)
+- ✅ Install Miniconda via Homebrew
+- ✅ Clone the repository to `~/heltia/onboarding_assistant`
+- ✅ Create conda environment `planner_agent`
+- ✅ Install all dependencies
+- ✅ Create `.env` file with placeholder
 
-1. **Open the setup.sh file** you just created (double-click it in Finder)
-2. **Copy the setup script content** from: https://github.com/PoyrazTahan/onboarding_assistant/blob/main/setup.sh
-3. **Paste the content** into your setup.sh file and save it
+**After setup completes:**
+1. **Add your OpenAI API key**: Edit the `.env` file using TextEdit
+2. **Open the project folder**: `open ~/heltia/onboarding_assistant`
+3. **Right-click on `.env` file** → "Open With" → "TextEdit"
+4. **Replace `OPENAI_API_KEY=your-openai-api-key-here`** with your actual key from [OpenAI](https://platform.openai.com/api-keys)
+5. **Save and close** the .env file
 
-#### 4. Run Setup Script
+### Manual Setup (If needed)
+
+If the automatic setup doesn't work:
 
 ```bash
-# Navigate to heltia directory and run setup
-cd ~/heltia
-./setup.sh
+# 1. Create project directory
+mkdir ~/heltia && cd ~/heltia
+
+# 2. Clone repository
+git clone https://github.com/PoyrazTahan/onboarding_assistant.git
+cd onboarding_assistant
+
+# 3. Create conda environment
+conda create -n planner_agent python=3.11 -y
+conda activate planner_agent
+
+# 4. Install dependencies
+pip install -r requirements.txt
+
+# 5. Create environment file
+echo "OPENAI_API_KEY=put-your-key-here" > .env
+open .env  # Opens in TextEdit - add your actual API key
 ```
-
-#### 5. Add Your OpenAI API Key
-
-**After setup completes, edit the .env file:**
-
-```bash
-# Open the environment file
-open ~/heltia/onboarding_assistant
-```
-
-Edit .env file by right-click + Open with Text Edit
-
-**Replace `your-openai-api-key-here` with your actual OpenAI API key from https://platform.openai.com/api-keys**
 
 #### 6. Activate Environment and Start Using
 

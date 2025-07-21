@@ -162,7 +162,7 @@ setup_env_file() {
         print_status "Creating .env file template..."
         cat > .env << EOF
 # OpenAI API Key - Get from https://platform.openai.com/api-keys
-OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_API_KEY=put-your-key-here
 EOF
         print_warning "⚠️  IMPORTANT: Edit the .env file and add your OpenAI API key!"
         print_status "Your .env file is located at: $(pwd)/.env"
@@ -200,8 +200,8 @@ show_next_steps() {
     echo ""
     echo -e "${GREEN}Next steps:${NC}"
     echo "1. Add your OpenAI API key to the .env file:"
-    echo -e "   ${BLUE}open ~/heltia/onboarding_assistant/"
-    echo -e "   ${BLUE}[Right Click Open with 'Text Edit']"
+    echo -e "   ${BLUE}open ~/heltia/onboarding_assistant/${NC}  # Open folder in Finder"
+    echo -e "   ${YELLOW}Right-click .env file → 'Open With' → 'TextEdit'${NC}"
     echo ""
     echo "2. Activate the conda environment:"
     echo -e "   ${BLUE}conda activate planner_agent${NC}"
